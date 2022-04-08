@@ -5,15 +5,21 @@ import game.components.property.Position;
 import game.components.property.Property;
 import game.components.property.PropertyCard;
 
+import javax.imageio.ImageIO;
 import javax.naming.InsufficientResourcesException;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Optional;
 
 public class Board extends JFrame {
 
     private final Game INSTANCE;
+    private final JPanel innerPanel;
+
     private final ArrayList<Property> properties;
 
     private Point cursorPosition;
@@ -107,15 +113,29 @@ public class Board extends JFrame {
             }
         }
 
-        // Main Inner Area Notice Starts at (1,1) and takes up 11x11
-        // JPanel innerPanel = new JPanel();
-        // innerPanel.setBackground(greenBackground);
+        innerPanel = new JPanel() {
+            @Override
+            public void paintComponent(Graphics g) {
+                super.paintComponent(g);
 
-        //Menu menu = new Menu();
+                final Graphics2D g2 = (Graphics2D) g.create();
+                final AffineTransform original = (AffineTransform) g2.getTransform().clone(); // original transform
 
-        // getContentPane().add(menu, new GridBagConstraints(2, 2, 7, 7,
-        //         0, 0, GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-        //         new Insets(0, 0, 0, 0), 0, 0));
+                try {
+                    final URL url = Game.class.getResource("/resources/logo.png");
+                    if (url != null) {
+                        g2.scale(0.5, 0.5);
+                        g2.drawImage(ImageIO.read(url), (int) (getWidth() * 0.35), (int) (getHeight() * 0.4), getWidth(), getHeight(), this);
+                        g2.setTransform(original);
+                    }
+                } catch (IOException e) {e.printStackTrace();}
+            }
+        };
+        innerPanel.setBackground(greenBackground);
+
+        getContentPane().add(innerPanel, new GridBagConstraints(1, 1, 10, 10,
+                0, 0, GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+                new Insets(0, 0, 0, 0), 0, 0));
 
         pack();
         setSize(width, height);
@@ -131,29 +151,66 @@ public class Board extends JFrame {
         final Graphics2D g2 = (Graphics2D) g.create();
 
         if (getCursorPosition() != null) {
+            g2.setColor(Color.WHITE);
             if (getPropertyMouseOver().getQuadrant() == Quadrant.LEFT) {
-                g2.setColor(Color.WHITE);
-
                 final int x = (int) Math.max(getCursorPosition().x, getPropertyMouseOver().getWidth() + (getPropertyMouseOver().getWidth() * 0.15)),
                         y = (int) Math.min(Math.max(getPropertyMouseOver().getY(), (getPropertyMouseOver().getWidth() + (getPropertyMouseOver().getWidth() * 0.33))),
                                 getContentPane().getHeight() - ((getPropertyMouseOver().getWidth() * 3) - (getPropertyMouseOver().getWidth() * 0.94))),
                         width = (getWidth() / 4), height = (getHeight() / 7);
 
-                g2.fillRoundRect(x, y, width, height, 20, 20);
-
-                g2.setColor(getPropertyMouseOver().getProperty().getGroup().getColor());
-                g2.drawRect(x, y, width, height);
-
-                g2.setColor(Color.BLACK);
-
-                final Font font = new Font("Arial Black", Font.BOLD, 14);
-                g2.setFont(font);
+                tooltipHelper(g2, x, y, width, height);
                 g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (x * 0.08)), (int) (y + (x * 0.15)));
 
-                g2.setFont(font.deriveFont(Font.PLAIN)); // update font to plain
-                g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (x * 0.08)), (int) (y + (x * 0.3)));
+                if (getPropertyMouseOver().getProperty().getValue() != 0)
+                    g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (x * 0.08)), (int) (y + (x * 0.3)));
+            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.RIGHT) {
+                final int x = (int) Math.max(getCursorPosition().x, (getContentPane().getWidth() - (getPropertyMouseOver().getWidth() * 3) - (getWidth() * 0.028))),
+                        y = (int) Math.min(Math.max(getPropertyMouseOver().getY(), (getPropertyMouseOver().getWidth() + (getPropertyMouseOver().getWidth() * 0.33))),
+                                getContentPane().getHeight() - ((getPropertyMouseOver().getWidth() * 3) - (getPropertyMouseOver().getWidth() * 0.94))),
+                        width = (getWidth() / 4), height = (getHeight() / 7);
+
+                tooltipHelper(g2, x, y, width, height);
+                g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (x * 0.018)), (int) (y + (x * 0.035)));
+
+                if (getPropertyMouseOver().getProperty().getValue() != 0)
+                    g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (x * 0.018)), (int) (y + (x * 0.07)));
+            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.TOP) {
+                final int x = (int) Math.min(Math.max(getPropertyMouseOver().getX(), (getPropertyMouseOver().getHeight() + (getPropertyMouseOver().getHeight() * 0.2))),
+                        (getContentPane().getWidth() - ((getPropertyMouseOver().getHeight() * 3) + (getPropertyMouseOver().getHeight() * 0.35)))),
+                        y = (int) (getPropertyMouseOver().getHeight() + (getPropertyMouseOver().getHeight() * 0.35)),
+                        width = (getWidth() / 4), height = (getHeight() / 7);
+
+                tooltipHelper(g2, x, y, width, height);
+                g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (y * 0.08)), (int) (y + (y * 0.18)));
+
+                if (getPropertyMouseOver().getProperty().getValue() != 0)
+                    g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (y * 0.08)), (int) (y + (y * 0.3)));
+            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.BOTTOM) {
+                final int x = (int) Math.min(Math.max(getPropertyMouseOver().getX(), (getPropertyMouseOver().getHeight() + (getPropertyMouseOver().getHeight() * 0.2))),
+                        (getContentPane().getWidth() - ((getPropertyMouseOver().getHeight() * 3) + (getPropertyMouseOver().getHeight() * 0.35)))),
+                        y = (int) (getContentPane().getHeight() - ((getPropertyMouseOver().getHeight() * 2) + (getPropertyMouseOver().getHeight() * 0.1))),
+                        width = (getWidth() / 4), height = (getHeight() / 7);
+
+                tooltipHelper(g2, x, y, width, height);
+                g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (y * 0.015)), (int) (y + (y * 0.03)));
+
+                if (getPropertyMouseOver().getProperty().getValue() != 0)
+                    g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (y * 0.015)), (int) (y + (y * 0.06)));
             }
+
+            g2.dispose();
         }
+    }
+
+    private void tooltipHelper(Graphics2D g2, int x, int y, int width, int height) {
+        g2.fillRoundRect(x, y, width, height, 20, 20);
+
+        g2.setColor(getPropertyMouseOver().getProperty().getGroup().getColor());
+        g2.drawRect(x, y, width, height);
+        g2.setColor(Color.BLACK);
+
+        final Font font = new Font("Arial Black", Font.BOLD, 14);
+        g2.setFont(font);
     }
 
     private void setupProperties() throws InsufficientResourcesException {
@@ -249,6 +306,8 @@ public class Board extends JFrame {
     public PropertyCard getPropertyMouseOver() {return propertyMouseOver;}
 
     public void setPropertyMouseOver(PropertyCard propertyMouseOver) {this.propertyMouseOver = propertyMouseOver;}
+
+    public JPanel getInnerPanel() {return innerPanel;}
 
     public enum Quadrant {LEFT, TOP, RIGHT, BOTTOM}
 

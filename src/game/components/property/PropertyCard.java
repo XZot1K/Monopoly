@@ -58,8 +58,7 @@ public class PropertyCard extends JPanel {
         g2.setColor(Color.WHITE);
         g2.fillRect(0, 0, getWidth(), getHeight());
 
-        if (getProperty().getGroup() == Property.Group.NONE || getProperty().isCorner()) {
-
+        if (getProperty().isCorner()) {
             try {
                 if (getProperty().getName().equals("GO")) {
                     final URL url = Game.class.getResource("/resources/corners/go.png");
@@ -109,24 +108,26 @@ public class PropertyCard extends JPanel {
                         final String[] args = property.getName().split(" ");
                         StringBuilder sb = new StringBuilder();
                         for (String word : args) sb.append(word.charAt(0));
-                        g2.drawString(sb.toString(), (int) ((getWidth() / 2) + (getWidth() * 0.35)), (int) ((getHeight() / 2) - (getHeight() * 0.13)));
+                        g2.drawString(sb.toString(), (int) ((getWidth() / 2) + (getWidth() * 0.35)), (int) (getHeight() - (getHeight() * 0.6)));
                     }
                 } else if (getProperty().getName().equals("CHANCE")) {
                     try {
                         final URL url = Game.class.getResource("/resources/chance/q-purple.png");
                         if (url != null) {
-                            g2.scale(0.3, 0.3);
-                            g2.drawImage(ImageIO.read(url), 0, 0, getWidth(), getHeight(), this);
+                            g2.scale(0.65, 0.45);
+                            g2.drawImage(ImageIO.read(url), (int) (getWidth() * 0.1), (int) (getHeight() * 0.6), getWidth(), getHeight(), this);
                             g2.setTransform(original);
                         }
                     } catch (IOException e) {e.printStackTrace();}
-                    g2.drawString(getProperty().getName(), (int) ((getWidth() / 2) + (getWidth() * 0.35)), (int) ((getHeight() / 2) - (getHeight() * 0.1)));
+                    g2.drawString(getProperty().getName(), (int) ((getWidth() / 2) + (getWidth() * 0.33)), (int) (getHeight() * 0.08));
 
                 } else if (getProperty().getName().equals("COMMUNITY CHEST")) {
                     try {
-                        final URL url = Game.class.getResource("/resources/chest.png");
+                        final URL url = Game.class.getResource("/resources/chest/chest_left.png");
                         if (url != null) {
+                            g2.scale(0.8, 0.9);
                             g2.drawImage(ImageIO.read(url), 0, 0, getWidth(), getHeight(), this);
+                            g2.setTransform(original);
                         }
                     } catch (IOException e) {e.printStackTrace();}
                     g2.drawString(getProperty().getName(), (int) ((getWidth() / 2) + (getWidth() * 0.35)), (int) ((getHeight() / 2) - (getHeight() * 0.1)));
@@ -162,7 +163,7 @@ public class PropertyCard extends JPanel {
                         final URL url = Game.class.getResource("/resources/stations/station_right.png");
                         if (url != null) {
                             g2.scale(0.85, 1);
-                            g2.drawImage(ImageIO.read(url), 0, 0, getWidth(), getHeight(), this);
+                            g2.drawImage(ImageIO.read(url), (int) (getWidth() * 0.18), 0, getWidth(), getHeight(), this);
                             g2.setTransform(original);
                         }
                     } catch (IOException e) {e.printStackTrace();}
@@ -171,7 +172,7 @@ public class PropertyCard extends JPanel {
                         final String[] args = property.getName().split(" ");
                         StringBuilder sb = new StringBuilder();
                         for (String word : args) sb.append(word.charAt(0));
-                        g2.drawString(sb.toString(), (int) ((getWidth() / 2) + (getWidth() * 0.35)), (int) ((getHeight() / 2) - (getHeight() * 0.13)));
+                        g2.drawString(sb.toString(), (int) ((getWidth() * 0.17)), (int) (getHeight() - (getHeight() * 0.2)));
                     }
                 } else {
                     g2.setColor(getProperty().getGroup().getColor());
