@@ -1,16 +1,23 @@
 package game.components.entity;
 
-public abstract class Player {
+import game.components.property.Property;
+
+public abstract class Token {
 
     private String name;
-    private int money, position;
+    private int money;
 
-    public Player(String name) {
+    private Property location;
+
+    public Token(String name) {
         setName(name);
         setMoney(1500);
-        setPosition(0);
+
+
     }
 
+
+    public abstract void movePlayer(int distance);
 
     // getters & setters
     public String getName() {return name;}
@@ -21,8 +28,8 @@ public abstract class Player {
 
     public void setMoney(int money) {this.money = money;}
 
-    public int getPosition() {return position;}
+    public Property getLocation() {return location;}
 
-    public void setPosition(int position) {this.position = position;}
+    public void setLocation(Property location) {this.location = location;}
 
 }

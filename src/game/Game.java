@@ -1,28 +1,47 @@
 package game;
 
+import game.components.entity.Token;
 import game.components.gui.Board;
-import game.components.property.Property;
 
 import javax.naming.InsufficientResourcesException;
 import javax.swing.*;
-import java.util.List;
+import java.util.ArrayList;
 
 public class Game {
 
-    private static Board BOARD;
+    public static Game INSTANCE;
 
-    public static void main(String[] args) {
+    private final ArrayList<Token> players;
+    private Board board;
+
+    public Game() {
+        INSTANCE = this;
+        players = new ArrayList<>();
+
         try {
-            BOARD = new Board("Monopoly", 1000, 1000, JFrame.EXIT_ON_CLOSE);
-            BOARD.revalidate();
+            board = new Board(INSTANCE, "Monopoly", 1000, 1000, JFrame.EXIT_ON_CLOSE);
+            board.revalidate();
         } catch (InsufficientResourcesException e) {
             e.printStackTrace();
         }
-
-
     }
 
-    public static enum State {
+    public static void main(String[] args) {
+
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (UnsupportedLookAndFeelException | ClassNotFoundException
+                | InstantiationException | IllegalAccessException e) {e.printStackTrace();}
+
+        new Game(); // new game instance
+    }
+
+    // getters & setters
+    public Board getBoard() {return board;}
+
+    public ArrayList<Token> getPlayers() {return players;}
+
+    public enum State {
         MENU
     }
 

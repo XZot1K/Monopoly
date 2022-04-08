@@ -1,61 +1,49 @@
 package game.components.property;
 
-import game.components.entity.Player;
+import game.components.entity.Token;
 
 import javax.naming.InsufficientResourcesException;
 import java.awt.*;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class Property {
 
     private final String name;
     private final Group group;
     private final int value;
-    private final int[][] positions;
+    private final ArrayList<Position> positions;
 
-    private Player owner;
+    private Token owner;
 
 
-    public Property(String name, Group group, int value, int... positions) throws InsufficientResourcesException {
+    public Property(String name, Group group, int value, Position... positions) throws InsufficientResourcesException {
         this.name = name;
         this.group = group;
         this.value = value;
+        this.positions = new ArrayList<>();
         setOwner(null);
 
         if (positions.length <= 0)
             throw new InsufficientResourcesException("No positions were provided.");
 
-        if ((positions.length % 2) != 0)
-            throw new InsufficientResourcesException("Positions must be provided in pairs of 2 for the X & Y axis.");
-
-
-        this.positions = new int[positions.length / 2][2]; // new 2D array for positions in pairs of 2
-
-        int lastCoordinate = 0;
-        for (int i = -1; ++i < positions.length; ) {
-            final int coordinate = positions[i];
-
-            if ((i % 2) != 0) { // each odd index represents the associate 'y' axis value for the lastCoordinate ('x' axis)
-                getPositions()[i / 2] = new int[]{lastCoordinate, coordinate}; // add new coordinate pair to the array
-                continue;
-            }
-
-            lastCoordinate = coordinate; // update the lastCoordinate variable to the found 'x' axis
-        }
-
-        final Optional<int[]> position = Stream.of(getPositions()).findAny();
-        if(!position.isPresent()) throw new InsufficientResourcesException("The property has no defined positions.");
+        if (!getPositions().isEmpty()) throw new InsufficientResourcesException("The property has no defined positions.");
+        Collections.addAll(getPositions(), positions);
     }
 
     public boolean isOwned() {return (getOwner() != null);}
 
-    //public JPanel buildPropertyCard() {
-    //    return new ;
-    //}
+    public boolean contains(int... coords) {
+        if (coords.length == 1) {
+            for (Position position : getPositions())
+                if (position.getPosition() == coords[0]) return true;
+        } else if (coords.length == 2) {
+            for (Position position : getPositions())
+                if (position.getX() == coords[0] && position.getY() == coords[1])
+                    return true;
+        }
 
-    public boolean contains(int x, int y) {
-        return Stream.of(getPositions()).anyMatch(position -> (position[0] == x && position[1] == y));
+        return false;
     }
 
     public boolean isCorner() {return (contains(0, 0) || contains(0, 10) || contains(10, 0) || contains(10, 10));}
@@ -64,15 +52,15 @@ public class Property {
 
     public Group getGroup() {return group;}
 
-    public Player getOwner() {return owner;}
+    public Token getOwner() {return owner;}
 
-    public void setOwner(Player owner) {this.owner = owner;}
+    public void setOwner(Token owner) {this.owner = owner;}
 
     public int getValue() {return value;}
 
     public String getName() {return name;}
 
-    public int[][] getPositions() {return positions;}
+    public ArrayList<Position> getPositions() {return positions;}
 
     public enum Group {
         BROWN(new Color(101, 67, 33)), LIGHT_BLUE(new Color(173, 216, 230)),
