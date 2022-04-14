@@ -1,219 +1,267 @@
-package game.components.gui;
+/*
+    Jeremiah Osborne
+    Date: 4/1/2022
+ */
+
+package game.components.gui.board;
 
 import game.Game;
 import game.components.property.Position;
 import game.components.property.Property;
 import game.components.property.PropertyCard;
 
-import javax.imageio.ImageIO;
 import javax.naming.InsufficientResourcesException;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.io.IOException;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Board extends JFrame {
 
-    private final Game INSTANCE;
-    private final JPanel innerPanel;
+    private final Game INSTANCE; // game instance
+    private final BoardCenter center; // the panel in the center of the board
 
-    private final ArrayList<Property> properties;
+    private final ArrayList<Property> properties; // the properties list
 
-    private Point cursorPosition;
-    private PropertyCard propertyMouseOver;
+    // these are used to handle the custom drawn tooltips (BOTH will be NULL when a property card is not hovered on)
+    private PropertyCard selectedProperty; // the selected property card (can be NULL)
 
-    public Board(Game gameInstance, String title, int width, int height, int closeOperation)
-            throws InsufficientResourcesException {
-        INSTANCE = gameInstance;
-        properties = new ArrayList<>();
-        setupProperties();
+    public Board(Game gameInstance) throws InsufficientResourcesException {
+        INSTANCE = gameInstance; // game instance pass-through
+        properties = new ArrayList<>(); // initialize the property list
+        setupProperties(); // initialize and add all the properties to a list in-memory
 
-        setTitle(title);
-        setDefaultCloseOperation(closeOperation);
-        setLayout(null);
+        setSize(gameInstance.getEnteredSize(), gameInstance.getEnteredSize());
+        setPreferredSize(new Dimension(gameInstance.getEnteredSize(), gameInstance.getEnteredSize()));
+        setMinimumSize(new Dimension(getContentPane().getWidth(), getContentPane().getHeight()));
 
-        final Color greenBackground = new Color(144, 238, 144);
-        getContentPane().setBackground(greenBackground);
+        setTitle("Monopoly - Turn 1"); // update title of frame
+        setDefaultCloseOperation(EXIT_ON_CLOSE); // exit on close
+        setLayout(null); // set the JFrame's layout to null as an initializer (will be updated later anyway)
 
-        final GridBagLayout layout = new GridBagLayout();
-        final double cornerWeight = 0.25, sideWeight = 0.18;
+        URL logo = Game.class.getResource("/resources/tokens/thimble.png");
+        if (logo != null) setIconImage(new ImageIcon(logo).getImage());
 
+        final Color greenBackground = new Color(144, 238, 144); // a nice green
+        getContentPane().setBackground(greenBackground); // update the content pane's background color
+
+        final GridBagLayout layout = new GridBagLayout(); // new grid bag layout
+        final double cornerWeight = 0.25, sideWeight = 0.18; // weights
+
+        // row weights to make corners squares vs being the same as the side pieces
         layout.rowWeights = new double[]{cornerWeight, sideWeight, sideWeight, sideWeight, sideWeight,
                 sideWeight, sideWeight, sideWeight, sideWeight, sideWeight, cornerWeight};
+
+        // column weights to make corners squares vs being the same as the side pieces
         layout.columnWeights = new double[]{cornerWeight, sideWeight, sideWeight, sideWeight, sideWeight,
                 sideWeight, sideWeight, sideWeight, sideWeight, sideWeight, cornerWeight};
 
-        getContentPane().setLayout(layout);
+        getContentPane().setLayout(layout); // update the content pane layout
 
         int x, y; // default grid coords
 
         // creating panels on each side
 
-        final Insets insets = new Insets(0, 0, 0, 0);
-        for (int i = -1; ++i < 4; ) {
-            for (int j = -1; ++j < 11; ) {
+        final Insets insets = new Insets(0, 0, 0, 0); // insets for the grid layout (spacing)
+        for (int i = -1; ++i < 4; ) { // loop 4 times since there are 4 sides to the board
+            for (int j = -1; ++j < 11; ) { // loop 11 times since there are 11 properties per side
                 PropertyCard propertyCard = null; // new property card
-                switch (i) {
+                switch (i) { // switch 'i' since this helps determine which quadrant the position is in
 
                     case 0: { // top
                         x = j;
-                        y = 0;
+                        y = 0; // top will have a y-axis of 0
 
-                        final int finalX = x, finalY = y;
+                        final int finalX = x, finalY = y; // finalize to use in optional stream
+
+                        // filter the properties by which one contains the coordinates
                         Optional<Property> optional = getProperties().stream()
                                 .filter(property -> property.contains(finalX, finalY)).findFirst();
-                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.TOP);
+
+                        // if present, create a property card (another JPanel which handles its individual visual)
+                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.TOP); // takes a quadrant enum
                         break;
                     }
 
                     case 1: { // left
-                        x = 0;
+                        x = 0; // left will have an x-axis of 0
                         y = j;
 
-                        final int finalX = x, finalY = y;
+                        final int finalX = x, finalY = y; // finalize to use in optional stream
+
+                        // filter the properties by which one contains the coordinates
                         Optional<Property> optional = getProperties().stream()
                                 .filter(property -> property.contains(finalX, finalY)).findFirst();
-                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.LEFT);
 
+                        // if present, create a property card (another JPanel which handles its individual visual)
+                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.LEFT); // takes a quadrant enum
                         break;
                     }
 
                     case 2: { // right
-                        x = 10;
+                        x = 10; // right will have an x-axis of 10
                         y = j;
 
-                        final int finalX = x, finalY = y;
+                        final int finalX = x, finalY = y; // finalize to use in optional stream
+
+                        // filter the properties by which one contains the coordinates
                         Optional<Property> optional = getProperties().stream()
                                 .filter(property -> property.contains(finalX, finalY)).findFirst();
-                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.RIGHT);
+
+                        // if present, create a property card (another JPanel which handles its individual visual)
+                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.RIGHT); // takes a quadrant enum
                         break;
                     }
 
                     default: { // bottom
                         x = j;
-                        y = 10;
+                        y = 10; // bottom will have a y-axis of 10
 
-                        final int finalX = x, finalY = y;
+                        final int finalX = x, finalY = y; // finalize to use in optional stream
+
+                        // filter the properties by which one contains the coordinates
                         Optional<Property> optional = getProperties().stream()
                                 .filter(property -> property.contains(finalX, finalY)).findFirst();
-                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.BOTTOM);
+
+                        // if present, create a property card (another JPanel which handles its individual visual)
+                        if (optional.isPresent()) propertyCard = new PropertyCard(optional.get(), Quadrant.BOTTOM); // takes a quadrant enum
                         break;
                     }
                 }
 
-                if (propertyCard != null) {
+                if (propertyCard != null) { // if a property card exists through this iteration
+
+                    // create a new constraint so spacing and weight is correct
                     final GridBagConstraints constraints = new GridBagConstraints(x, y, 1, 1, 0, 0,
                             GridBagConstraints.CENTER, GridBagConstraints.BOTH, insets, 0, 0);
-                    getContentPane().add(propertyCard, constraints);
-                    propertyCard.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+                    getContentPane().add(propertyCard, constraints); // add to the content pane
+                    propertyCard.setBorder(BorderFactory.createLineBorder(Color.BLACK)); // outlines the JPanel with a black border
                 }
             }
         }
 
-        innerPanel = new JPanel() {
-            @Override
-            public void paintComponent(Graphics g) {
-                super.paintComponent(g);
-
-                final Graphics2D g2 = (Graphics2D) g.create();
-                final AffineTransform original = (AffineTransform) g2.getTransform().clone(); // original transform
-
-                try {
-                    final URL url = Game.class.getResource("/resources/logo.png");
-                    if (url != null) {
-                        g2.scale(0.5, 0.5);
-                        g2.drawImage(ImageIO.read(url), (int) (getWidth() * 0.35), (int) (getHeight() * 0.4), getWidth(), getHeight(), this);
-                        g2.setTransform(original);
-                    }
-                } catch (IOException e) {e.printStackTrace();}
-            }
-        };
-        innerPanel.setBackground(greenBackground);
-
-        getContentPane().add(innerPanel, new GridBagConstraints(1, 1, 10, 10,
+        this.center = new BoardCenter(this, getContentPane().getWidth(), getContentPane().getHeight());
+        getContentPane().add(center, new GridBagConstraints(0, 0, 0, 0,
                 0, 0, GridBagConstraints.CENTER, GridBagConstraints.BOTH,
                 new Insets(0, 0, 0, 0), 0, 0));
 
-        pack();
-        setSize(width, height);
-        setMinimumSize(new Dimension(getWidth(), getHeight()));
 
-        setVisible(true);
+        addComponentListener(new ComponentAdapter() {
+            public void componentResized(ComponentEvent e) {
+                getCenter().height = e.getComponent().getSize().height;
+                getCenter().width = e.getComponent().getSize().width;
+                getCenter().update();
+            }
+        });
+
+
+        pack(); // pack the frame
+
+        // set the frame size & set its minimum dimensions/size to that same value to keep things clean
+        setSize(gameInstance.getEnteredSize(), gameInstance.getEnteredSize());
+        setPreferredSize(new Dimension(gameInstance.getEnteredSize(), gameInstance.getEnteredSize()));
+        setMinimumSize(new Dimension(getWidth(), getHeight()));
+        setVisible(true); // make the frame visible
     }
+
 
     @Override
     public void paint(Graphics g) {
         super.paint(g);
 
-        final Graphics2D g2 = (Graphics2D) g.create();
+        final Graphics2D g2 = (Graphics2D) g.create(); // 2d graphics
 
-        if (getCursorPosition() != null) {
-            g2.setColor(Color.WHITE);
-            if (getPropertyMouseOver().getQuadrant() == Quadrant.LEFT) {
+        if (getSelectedProperty() != null) { // check if a property card is currently selected
+
+        }
+
+        /*if (getCursorPosition() != null && getPropertyMouseOver() != null) { // check if property card is being hovered on
+            g2.setColor(Color.WHITE); // set color to white
+
+            if (getPropertyMouseOver().getQuadrant() == Quadrant.LEFT) { // if left side of board
                 final int x = (int) Math.max(getCursorPosition().x, getPropertyMouseOver().getWidth() + (getPropertyMouseOver().getWidth() * 0.15)),
                         y = (int) Math.min(Math.max(getPropertyMouseOver().getY(), (getPropertyMouseOver().getWidth() + (getPropertyMouseOver().getWidth() * 0.33))),
                                 getContentPane().getHeight() - ((getPropertyMouseOver().getWidth() * 3) - (getPropertyMouseOver().getWidth() * 0.94))),
                         width = (getWidth() / 4), height = (getHeight() / 7);
 
                 tooltipHelper(g2, x, y, width, height);
+
+                // draws the name of the property at the top of the tooltip
                 g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (x * 0.08)), (int) (y + (x * 0.15)));
 
-                if (getPropertyMouseOver().getProperty().getValue() != 0)
+                if (getPropertyMouseOver().getProperty().getValue() != 0) // if the property cost is not 0 then the cost will be drawn
                     g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (x * 0.08)), (int) (y + (x * 0.3)));
-            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.RIGHT) {
+            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.RIGHT) { // if right side of board
                 final int x = (int) Math.max(getCursorPosition().x, (getContentPane().getWidth() - (getPropertyMouseOver().getWidth() * 3) - (getWidth() * 0.028))),
                         y = (int) Math.min(Math.max(getPropertyMouseOver().getY(), (getPropertyMouseOver().getWidth() + (getPropertyMouseOver().getWidth() * 0.33))),
                                 getContentPane().getHeight() - ((getPropertyMouseOver().getWidth() * 3) - (getPropertyMouseOver().getWidth() * 0.94))),
                         width = (getWidth() / 4), height = (getHeight() / 7);
 
                 tooltipHelper(g2, x, y, width, height);
+
+                // draws the name of the property at the top of the tooltip
                 g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (x * 0.018)), (int) (y + (x * 0.035)));
 
                 if (getPropertyMouseOver().getProperty().getValue() != 0)
                     g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (x * 0.018)), (int) (y + (x * 0.07)));
-            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.TOP) {
+            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.TOP) { // if top of board
                 final int x = (int) Math.min(Math.max(getPropertyMouseOver().getX(), (getPropertyMouseOver().getHeight() + (getPropertyMouseOver().getHeight() * 0.2))),
                         (getContentPane().getWidth() - ((getPropertyMouseOver().getHeight() * 3) + (getPropertyMouseOver().getHeight() * 0.35)))),
                         y = (int) (getPropertyMouseOver().getHeight() + (getPropertyMouseOver().getHeight() * 0.35)),
                         width = (getWidth() / 4), height = (getHeight() / 7);
 
                 tooltipHelper(g2, x, y, width, height);
+
+                // draws the name of the property at the top of the tooltip
                 g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (y * 0.08)), (int) (y + (y * 0.18)));
 
-                if (getPropertyMouseOver().getProperty().getValue() != 0)
+                if (getPropertyMouseOver().getProperty().getValue() != 0) // if the property cost is not 0 then the cost will be drawn
                     g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (y * 0.08)), (int) (y + (y * 0.3)));
-            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.BOTTOM) {
+            } else if (getPropertyMouseOver().getQuadrant() == Quadrant.BOTTOM) { // if bottom of board
                 final int x = (int) Math.min(Math.max(getPropertyMouseOver().getX(), (getPropertyMouseOver().getHeight() + (getPropertyMouseOver().getHeight() * 0.2))),
                         (getContentPane().getWidth() - ((getPropertyMouseOver().getHeight() * 3) + (getPropertyMouseOver().getHeight() * 0.35)))),
                         y = (int) (getContentPane().getHeight() - ((getPropertyMouseOver().getHeight() * 2) + (getPropertyMouseOver().getHeight() * 0.1))),
                         width = (getWidth() / 4), height = (getHeight() / 7);
 
-                tooltipHelper(g2, x, y, width, height);
+                tooltipHelper(g2, x, y, width, height); // draw the tooltip box and setup font, etc.
+
+                // draws the name of the property at the top of the tooltip
                 g2.drawString(getPropertyMouseOver().getProperty().getName(), (int) (x + (y * 0.015)), (int) (y + (y * 0.03)));
 
-                if (getPropertyMouseOver().getProperty().getValue() != 0)
+                if (getPropertyMouseOver().getProperty().getValue() != 0) // if the property cost is not 0 then the cost will be drawn
                     g2.drawString("Cost: " + getPropertyMouseOver().getProperty().getValue(), (int) (x + (y * 0.015)), (int) (y + (y * 0.06)));
             }
 
-            g2.dispose();
-        }
+            g2.dispose(); // dispose changes to graphics
+        }*/
+
+        g2.dispose(); // dispose changes to graphics
     }
 
     private void tooltipHelper(Graphics2D g2, int x, int y, int width, int height) {
-        g2.fillRoundRect(x, y, width, height, 20, 20);
+        g2.fillRoundRect(x, y, width, height, 20, 20); // draw a nice white box
 
-        g2.setColor(getPropertyMouseOver().getProperty().getGroup().getColor());
-        g2.drawRect(x, y, width, height);
+        // set the color to that of the group the property belongs to
+        // g2.setColor(getPropertyMouseOver().getProperty().getGroup().getColor());
+        g2.drawRect(x, y, width, height); // draw a nice hollow box with the colored border
+
+        // set color to black & create a new font then set it
         g2.setColor(Color.BLACK);
-
         final Font font = new Font("Arial Black", Font.BOLD, 14);
         g2.setFont(font);
     }
 
     private void setupProperties() throws InsufficientResourcesException {
+
+        /*
+         * For each property it is first created given a name, group, value/cost, and an array of positions
+         * given a simple position (0-39) and its actual layout coordinates.
+         */
 
         // corners
         getProperties().add(new Property("GO", Property.Group.NONE, 0, new Position(0, 0, 10)));
@@ -280,6 +328,10 @@ public class Board extends JFrame {
         getProperties().add(new Property("BOARDWALK", Property.Group.DARK_BLUE, 400, new Position(39, 1, 10)));
     }
 
+    /**
+     * @param position The position to filter by, can be either 0-39 or the layout coordinates x: <0-10>, y: <0-10>.
+     * @return The property at the defined position, CAN RETURN NULL.
+     */
     public Property getByPosition(int... position) {
         if (position.length == 1) { // if a simple one integer coord is passed
             for (Property property : getProperties())
@@ -296,19 +348,39 @@ public class Board extends JFrame {
         return null; // position out of bounds or no property with coords
     }
 
+    /**
+     * @param group The group to filter properties by.
+     * @return The list of properties in the defined group.
+     */
+    public Collection<Property> getProperties(Property.Group group) {
+        return getProperties().stream().filter(property -> property.getGroup() == group).collect(Collectors.toList());
+    }
+
     // getters & setters
+
+    /**
+     * @return The list of properties.
+     */
     public ArrayList<Property> getProperties() {return properties;}
 
-    public Point getCursorPosition() {return cursorPosition;}
+    /**
+     * @return The property card currently selected.
+     */
+    public PropertyCard getSelectedProperty() {return selectedProperty;}
 
-    public void setCursorPosition(Point cursorPosition) {this.cursorPosition = cursorPosition;}
+    /**
+     * @param property The property card to set as selected.
+     */
+    public void setSelectedProperty(PropertyCard property) {this.selectedProperty = property;}
 
-    public PropertyCard getPropertyMouseOver() {return propertyMouseOver;}
+    /**
+     * @return The panel in the center of the board.
+     */
+    public BoardCenter getCenter() {return center;}
 
-    public void setPropertyMouseOver(PropertyCard propertyMouseOver) {this.propertyMouseOver = propertyMouseOver;}
-
-    public JPanel getInnerPanel() {return innerPanel;}
-
+    /**
+     * Simple enumeration for the 4 quadrants of the board.
+     */
     public enum Quadrant {LEFT, TOP, RIGHT, BOTTOM}
 
 }

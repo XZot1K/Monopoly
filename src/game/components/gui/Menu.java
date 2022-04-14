@@ -1,53 +1,156 @@
 package game.components.gui;
 
+import game.Game;
+
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 
-public class Menu extends JPanel {
+public class Menu extends JFrame {
 
-    private boolean closable;
-    private final GroupLayout layout;
+    private final Menu MENU_INSTANCE;
+    private final Game INSTANCE;
 
-    public Menu(String buttonCompletion) {
-        setClosable(true);
+    public Menu(Game instance) {
+        this.MENU_INSTANCE = this;
+        this.INSTANCE = instance;
 
-        layout = new GroupLayout(this);
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
+        setTitle("Monopoly - Main Menu");
+        setSize(500, 450);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setPreferredSize(new Dimension(getWidth(), getHeight()));
+        setIconImage(instance.getIcon());
 
-    }
+        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 
-    public Menu create() {
-        setLayout(layout);
+        final Color greenBackground = new Color(144, 238, 144); // a nice green
+        getContentPane().setBackground(greenBackground); // update the content pane's background color
+
+        final Component spacer = Box.createRigidArea(new Dimension(0, (int) (getHeight() * 0.35)));
+        add(spacer);
+
+        final Font font = new Font("Arial Black", Font.BOLD, 14);
+
+        JButton loadButton = new JButton("Load");
+        loadButton.setFont(font);
+        loadButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        loadButton.setMaximumSize(new Dimension((int) (getWidth() * 0.55), (int) (getHeight() * 0.17)));
+        loadButton.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser(new File("/"));
+                fileChooser.setDialogTitle("Select the Monopoly save: ");
+                fileChooser.setFileFilter(new FileNameExtensionFilter(".monopoly", ".monopoly"));
+
+                if (fileChooser.showDialog(MENU_INSTANCE, "Load") == JFileChooser.APPROVE_OPTION) {
+
+                    final File file = fileChooser.getSelectedFile();
+
+                    if (file == null || !file.exists() || !file.getName().toLowerCase().endsWith(".monopoly")) // check if the file is a monopoly save
+                    {
+                        // open error message that it wasn't
+                        JOptionPane.showMessageDialog(MENU_INSTANCE, "The selected save was unable to be read.",
+                                "Loading Save Failed", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    // TODO load the save
+                }
+            }
+        });
+        add(loadButton, BorderLayout.CENTER);
+
+        final Component spacer2 = Box.createRigidArea(new Dimension(0, (int) (getHeight() * 0.01)));
+        add(spacer2);
+
+        JButton newButton = new JButton("New Game");
+        newButton.setFont(font);
+        newButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        newButton.setMaximumSize(new Dimension((int) (getWidth() * 0.55), (int) (getHeight() * 0.17)));
+        newButton.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                dispose(); // dispose the menu frame
+
+                new Creation(INSTANCE);
+
+                /*try {
+                    Game.INSTANCE.setBoard(new Board(Game.INSTANCE)); // new board object
+                    Game.INSTANCE.getBoard().revalidate(); // revalidate the frame in case of any changes after making it visible
+                } catch (InsufficientResourcesException exe) {exe.printStackTrace();} // highly unlikely to occur, but prints the stack if it occurs*/
+
+            }
+        });
+        add(newButton, BorderLayout.CENTER);
+
+        final Component spacer3 = Box.createRigidArea(new Dimension(0, (int) (getHeight() * 0.01)));
+        add(spacer3);
+
+        JButton quitButton = new JButton("Quit");
+        quitButton.setFont(font);
+        quitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        quitButton.setMaximumSize(new Dimension((int) (getWidth() * 0.55), (int) (getHeight() * 0.17)));
+        quitButton.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {System.exit(0);}
+        });
+        add(quitButton, BorderLayout.CENTER);
+
+        addComponentListener(new ComponentAdapter() {
+            public void componentResized(ComponentEvent e) {
+                final Dimension dimension = new Dimension((int) (getWidth() * 0.55), (int) (getHeight() * 0.17)),
+                        onePercentDimension = new Dimension(0, (int) (getHeight() * 0.01)),
+                        thirtyFiveDimension = new Dimension(0, (int) (getHeight() * 0.35));
+
+                // resize each button and spacer based on resized frame dimensions
+                spacer.setMaximumSize(thirtyFiveDimension);
+                loadButton.setMaximumSize(dimension);
+                spacer2.setMaximumSize(onePercentDimension);
+                newButton.setMaximumSize(dimension);
+                spacer3.setMaximumSize(onePercentDimension);
+                quitButton.setMaximumSize(dimension);
+            }
+        });
+
+        pack();
         setVisible(true);
-        return this;
     }
 
     @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
+    public void paint(Graphics g) {
+        super.paint(g);
 
-        final Graphics2D g2 = (Graphics2D) g.create();
+        final Graphics2D g2d = (Graphics2D) g;
+        final AffineTransform original = (AffineTransform) g2d.getTransform().clone(); // original transform
 
-        g2.setColor(Color.GRAY);
-        g2.fillRect(0, 0, getWidth(), getHeight());
+        final AffineTransform affineTransform = new AffineTransform();
+        affineTransform.rotate(Math.toRadians(-40), 0, 0);
+        g2d.setTransform(affineTransform);
 
-       /* if (isClosable()) { // if closable, paint the 'X' button
-            final int closeButtonX = (int) (getWidth() - (getWidth() * 0.05));
-            g2.setColor(Color.RED);
-            g2.fillRect(closeButtonX, 1, (int) (getWidth() * 0.05), (int) (getHeight() * 0.05));
+        final URL url = Game.class.getResource("/resources/logo.png"); // url to the logo image file (inside the JAR)
+        if (url != null) { // not null
+            try {
 
-            g2.setColor(Color.WHITE);
-            g2.setFont(new Font("Lucida Grande", Font.BOLD, );
-            g2.drawString("X", closeButtonX + (int) (getWidth() * 0.0116), (int) (getHeight() * 0.044));
-        } */
-    }
+                final BufferedImage image = ImageIO.read(url);
 
-    public boolean isClosable() {return closable;}
+                g2d.scale(0.72, 0.62);
+                g2d.drawImage(image, (int) -(getContentPane().getWidth() * 0.2), (int) (getContentPane().getHeight() * 0.55),
+                        getContentPane().getWidth(), getContentPane().getHeight(), this);
 
-    public Menu setClosable(boolean closable) {
-        this.closable = closable;
-        return this;
+            } catch (IOException e) {e.printStackTrace();}
+        }
+
+        g2d.setTransform(original);
     }
 
 }
