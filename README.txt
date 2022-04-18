@@ -7,6 +7,8 @@
 
     All image-related resources are traced or free-hand drawn custom styled versions of the official Monopoly game board.
 
+    * Dice-Sprite was based on the dice found at https://www.freeiconspng.com/img/27661
+
 ## Game Rules:
 
     https://www.ultraboardgames.com/monopoly/game-rules.php

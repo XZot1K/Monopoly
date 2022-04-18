@@ -18,17 +18,20 @@ import java.net.URL;
 public class Menu extends JFrame {
 
     private final Menu MENU_INSTANCE;
-    private final Game INSTANCE;
 
-    public Menu(Game instance) {
+    public Menu() {
         this.MENU_INSTANCE = this;
-        this.INSTANCE = instance;
 
         setTitle("Monopoly - Main Menu");
         setSize(500, 450);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(getWidth(), getHeight()));
-        setIconImage(instance.getIcon());
+        setIconImage(Game.INSTANCE.getIcon());
+
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setLocationRelativeTo(null);
+        setLocation((int) ((screenSize.getWidth() / 2) - (getPreferredSize().getWidth() / 2)),
+                (int) ((screenSize.getHeight() / 2) - (getPreferredSize().getHeight() / 2)));
 
         setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 
@@ -79,16 +82,8 @@ public class Menu extends JFrame {
         newButton.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
                 dispose(); // dispose the menu frame
-
-                new Creation(INSTANCE);
-
-                /*try {
-                    Game.INSTANCE.setBoard(new Board(Game.INSTANCE)); // new board object
-                    Game.INSTANCE.getBoard().revalidate(); // revalidate the frame in case of any changes after making it visible
-                } catch (InsufficientResourcesException exe) {exe.printStackTrace();} // highly unlikely to occur, but prints the stack if it occurs*/
-
+                new Creation(); // new creation menu instance
             }
         });
         add(newButton, BorderLayout.CENTER);

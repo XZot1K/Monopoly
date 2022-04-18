@@ -6,6 +6,7 @@
 package game.components.property;
 
 import game.Game;
+import game.components.entity.Token;
 import game.components.gui.board.Board;
 
 import javax.imageio.ImageIO;
@@ -37,18 +38,16 @@ public class PropertyCard extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 super.mouseClicked(e);
 
-                if (getProperty().isPurchasable()) {
-                    // check if the selected property is null or not the same as this card
-                    if (Game.INSTANCE.getBoard().getSelectedProperty() == null) {
-                        Game.INSTANCE.getBoard().setSelectedProperty(CARD_INSTANCE);
-                        Game.INSTANCE.getBoard().repaint(); // repaint the board
-                    } else if (Game.INSTANCE.getBoard().getSelectedProperty() == CARD_INSTANCE) {
-                        Game.INSTANCE.getBoard().setSelectedProperty(null); // reset selected property
-                        Game.INSTANCE.getBoard().repaint(); // repaint the board
-                    } else if (Game.INSTANCE.getBoard().getSelectedProperty() != CARD_INSTANCE) {
-                        Game.INSTANCE.getBoard().setSelectedProperty(CARD_INSTANCE); // set new selected property
-                        Game.INSTANCE.getBoard().repaint(); // repaint the board
-                    }
+                // check if the selected property is null or not the same as this card
+                if (Game.INSTANCE.getSelectedProperty() == null) {
+                    Game.INSTANCE.setSelectedProperty(CARD_INSTANCE);
+                    Game.INSTANCE.getBoard().repaint(); // repaint the board
+                } else if (Game.INSTANCE.getSelectedProperty() == CARD_INSTANCE) {
+                    Game.INSTANCE.setSelectedProperty(null); // reset selected property
+                    Game.INSTANCE.getBoard().repaint(); // repaint the board
+                } else if (Game.INSTANCE.getSelectedProperty() != CARD_INSTANCE) {
+                    Game.INSTANCE.setSelectedProperty(CARD_INSTANCE); // set new selected property
+                    Game.INSTANCE.getBoard().repaint(); // repaint the board
                 }
 
             }
@@ -208,8 +207,36 @@ public class PropertyCard extends JPanel {
                         for (String word : args) sb.append(word.charAt(0)); // add the first letter of each word to the string builder
                         g2.drawString(sb.toString(), getWidth() / 2, (int) ((getHeight() / 2) - (getHeight() * 0.13))); // draw the string
                     }
-                }
 
+                    if (getProperty().getHotels() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/hotel.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.3, 0.3);
+                                g2.drawImage(ImageIO.read(url), (int) (getWidth() * 2.4), (int) (getHeight() * 1.2), getWidth(), getHeight(), this);
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    } else if (getProperty().getHouses() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/house.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.3, 0.3);
+
+                                double basePercent = 0;
+                                for (int i = -1; ++i < getProperty().getHouses(); ) {
+                                    g2.drawImage(ImageIO.read(url), (int) (getWidth() * 2.4),
+                                            (int) (getHeight() * basePercent), getWidth(), getHeight(), this);
+                                    basePercent += 0.75;
+                                }
+
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    }
+                }
 
             } else if (quadrant == Board.Quadrant.RIGHT) { // right side board
 
@@ -282,6 +309,35 @@ public class PropertyCard extends JPanel {
                     }
 
                     g2.setFont(font.deriveFont(affineTransform));
+
+                    if (getProperty().getHotels() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/hotel.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.3, 0.3);
+                                g2.drawImage(ImageIO.read(url), (int) -(getWidth() * 0.03), (int) (getHeight() * 1.2), getWidth(), getHeight(), this);
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    } else if (getProperty().getHouses() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/house.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.3, 0.3);
+
+                                double basePercent = 0;
+                                for (int i = -1; ++i < getProperty().getHouses(); ) {
+                                    g2.drawImage(ImageIO.read(url), (int) -(getWidth() * 0.02),
+                                            (int) (getHeight() * basePercent), getWidth(), getHeight(), this);
+                                    basePercent += 0.75;
+                                }
+
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    }
                 }
             } else if (quadrant == Board.Quadrant.TOP) { // top of the board
 
@@ -367,9 +423,36 @@ public class PropertyCard extends JPanel {
                     }
 
                     g2.setFont(font.deriveFont(affineTransform));
+
+                    if (getProperty().getHotels() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/hotel.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.4, 0.3);
+                                g2.drawImage(ImageIO.read(url), (int) (getWidth() * 0.85), (int) (getHeight() * 2.4), getWidth(), getHeight(), this);
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    } else if (getProperty().getHouses() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/house.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.3, 0.3);
+
+                                double basePercent = 0;
+                                for (int i = -1; ++i < getProperty().getHouses(); ) {
+                                    g2.drawImage(ImageIO.read(url), (int) (getWidth() * basePercent), (int) (getHeight() * 2.4), getWidth(), getHeight(), this);
+                                    basePercent += 0.75;
+                                }
+
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    }
                 }
 
-                // TODO add utilities, railroads, etc.
             } else if (quadrant == Board.Quadrant.BOTTOM) { // bottom of the board
 
                 g2.setColor(Color.BLACK);
@@ -463,17 +546,99 @@ public class PropertyCard extends JPanel {
                         g2.drawString(sb.toString(), (int) (getWidth() * ((sb.length() >= 3) ? 0.3 : 0.4)), (int) (getHeight() * 0.45)); // draw the string
                     } else if (property.getName().equals("BOARDWALK"))
                         g2.drawString("BW", (int) (getWidth() * 0.33), (int) (getHeight() * 0.45)); // draw the string
+
+                    if (getProperty().getHotels() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/hotel.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.4, 0.3);
+                                g2.drawImage(ImageIO.read(url), (int) (getWidth() * 0.85), (int) -(getWidth() * 0.08), getWidth(), getHeight(), this);
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    } else if (getProperty().getHouses() > 0) {
+                        try {
+                            final URL url = Game.class.getResource("/resources/upgrades/house.png"); // load hotel image
+                            if (url != null) {
+                                // scale it down some and draw it to the panel
+                                g2.scale(0.3, 0.3);
+
+                                double basePercent = 0;
+                                for (int i = -1; ++i < getProperty().getHouses(); ) {
+                                    g2.drawImage(ImageIO.read(url), (int) (getWidth() * basePercent), (int) -(getWidth() * 0.08), getWidth(), getHeight(), this);
+                                    basePercent += 0.75;
+                                }
+
+                                g2.setTransform(original);
+                            }
+                        } catch (IOException e) {e.printStackTrace();}
+                    }
                 }
             }
 
             g2.setTransform(original);  // reset the transform
         }
 
-        if (Game.INSTANCE.getBoard().getSelectedProperty() != null && Game.INSTANCE.getBoard().getSelectedProperty() == this) {
+        if (Game.INSTANCE.getSelectedProperty() != null && Game.INSTANCE.getSelectedProperty() == this) {
             // color the panel size to white
             g2.setColor(Color.PINK);
             g2.setStroke(new BasicStroke(5));
             g2.drawRect(0, 0, (int) (getWidth() - (getWidth() * 0.008)), (int) (getHeight() - (getHeight() * 0.008)));
+        }
+
+        drawTokens(g2);
+    }
+
+    private void drawTokens(Graphics2D g2) {
+        final boolean isSide = (quadrant == Board.Quadrant.LEFT || quadrant == Board.Quadrant.RIGHT),
+                isJailCorner = getProperty().getName().equals("IN JAIL/JUST VISITING");
+        final int longSide = (isSide ? getWidth() : getHeight()), shortSide = (isSide ? getHeight() : getWidth());
+
+        int offsetX = (int) (getWidth() * 0.03), offsetY = (int) (getHeight() * 0.03);
+        for (Token token : Game.INSTANCE.getPlayers()) {
+            if (token == null || token.getIcon() == null || token.getLocation() != getProperty()) continue;
+
+            if (isJailCorner) {
+                if (token.isInJail()) continue;
+
+                if (offsetX > (int) (longSide * 0.95)) {
+                    offsetX = (int) (longSide * 0.03);
+                    offsetY += (int) (shortSide * 0.25);
+                }
+
+                g2.drawImage(token.getIcon().get(), offsetX, offsetY, (int) (getWidth() * 0.25), (int) (getHeight() * 0.25), this);
+
+                if (offsetY < (int) (shortSide * 0.25)) offsetX += (int) ((longSide * (property.isCorner() ? 1 : 0.7)) / 4);
+                else offsetY += (int) ((shortSide * (property.isCorner() ? 1 : 0.7)) / 4);
+                continue;
+            }
+
+            if (offsetX > (int) (longSide * 0.6)) {
+                offsetX = (int) (longSide * 0.05);
+                offsetY += (int) (shortSide * 0.3);
+            }
+
+            g2.drawImage(token.getIcon().get(), offsetX, offsetY, (int) (getWidth() * 0.25), (int) (getHeight() * 0.25), this);
+
+            offsetX += (int) ((longSide * (property.isCorner() ? 0.95 : 0.7)) / 3);
+        }
+
+        if (isJailCorner) {
+            offsetX = (int) (getWidth() * 0.3);
+            offsetY = (int) (getHeight() * 0.31);
+            for (Token token : Game.INSTANCE.getPlayers()) {
+                if (token == null || !token.isInJail() || token.getIcon() == null || token.getLocation() != getProperty()) continue;
+
+                if (offsetX > (int) (longSide * 0.95)) {
+                    offsetX = (int) (longSide * 0.3);
+                    offsetY += (int) (shortSide * 0.23);
+                }
+
+                g2.drawImage(token.getIcon().get(), offsetX, offsetY, (int) (getWidth() * 0.25), (int) (getHeight() * 0.25), this);
+
+                offsetX += (int) ((longSide * 0.72) / 3);
+            }
         }
     }
 

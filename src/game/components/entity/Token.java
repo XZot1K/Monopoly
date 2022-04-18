@@ -13,24 +13,32 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 
-public abstract class Token implements Comparable<Token> {
+public class Token implements Comparable<Token> {
 
     private String name; // the name of the token
     private int money; // the money currently held by the token
 
     private Icon icon;
 
+    private boolean inJail, gojCard, sellinggojCard;
+
     private Property location; // the property the token is located at (position)
 
     public Token(String name) {
         setName(name); // initialize the token name, given the parameter
         setMoney(1500); // initialize the money held by the token (rules state 1500)
+        setLocation(Game.INSTANCE.getByPosition(0, 10)); // set default position to GO
+        setInJail(false);
+        setGOJCard(false);
+        setSellingGOJCard(false);
     }
 
     /**
      * @param distance the distance on the board to move the token
      */
-    public abstract void move(int distance);
+    public void move(int distance) {
+
+    }
 
     // getters & setters
 
@@ -72,13 +80,35 @@ public abstract class Token implements Comparable<Token> {
     @Override
     public int compareTo(Token token) {return getName().compareToIgnoreCase(token.getName());}
 
+    public boolean isInJail() {return inJail;}
+
+    public void setInJail(boolean inJail) {this.inJail = inJail;}
+
+    public boolean hasGOJCard() {return gojCard;}
+
+    public void setGOJCard(boolean gojCard) {this.gojCard = gojCard;}
+
+    public boolean isSellingGOJCard() {return sellinggojCard;}
+
+    public void setSellingGOJCard(boolean sellinggojCard) {this.sellinggojCard = sellinggojCard;}
+
     public enum Icon {
         THIMBLE, CAR, TOP_HAT, WHEELBARROW, SCOTTIE, FLAT_IRON, BOOT, BATTLESHIP;
 
         /**
+         * @param text The text to check through.
+         * @return The icon whose name is mentioned in the text.
+         */
+        public static Icon getFromString(String text) {
+            final String modifiedString = text.toUpperCase().replace(" ", "_");
+            for (Icon icon : values()) if (modifiedString.contains(icon.name())) return icon;
+            return null;
+        }
+
+        /**
          * @return Gets the icon from file.
          */
-        public BufferedImage getIcon() {
+        public BufferedImage get() {
             final URL url = Game.class.getResource("/resources/tokens/" + name().toLowerCase().replace("_", "-") + ".png"); // load image
             if (url != null) {
                 try {
