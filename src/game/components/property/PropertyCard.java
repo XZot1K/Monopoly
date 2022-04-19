@@ -595,9 +595,9 @@ public class PropertyCard extends JPanel {
                 isJailCorner = getProperty().getName().equals("IN JAIL/JUST VISITING");
         final int longSide = (isSide ? getWidth() : getHeight()), shortSide = (isSide ? getHeight() : getWidth());
 
-        int offsetX = (int) (getWidth() * 0.03), offsetY = (int) (getHeight() * 0.03);
+        int offsetX = (int) (getWidth() * ((quadrant == Board.Quadrant.RIGHT) ? 0.25 : 0.03)), offsetY = (int) (getHeight() * ((quadrant == Board.Quadrant.BOTTOM) ? 0.25 : 0.03));
         for (Token token : Game.INSTANCE.getPlayers()) {
-            if (token == null || token.getIcon() == null || token.getLocation() != getProperty()) continue;
+            if (token == null || token.getIcon() == null || !getProperty().contains(token.getSimplePosition())) continue;
 
             if (isJailCorner) {
                 if (token.isInJail()) continue;
@@ -628,7 +628,7 @@ public class PropertyCard extends JPanel {
             offsetX = (int) (getWidth() * 0.3);
             offsetY = (int) (getHeight() * 0.31);
             for (Token token : Game.INSTANCE.getPlayers()) {
-                if (token == null || !token.isInJail() || token.getIcon() == null || token.getLocation() != getProperty()) continue;
+                if (token == null || !token.isInJail() || token.getIcon() == null || !getProperty().contains(token.getSimplePosition())) continue;
 
                 if (offsetX > (int) (longSide * 0.95)) {
                     offsetX = (int) (longSide * 0.3);

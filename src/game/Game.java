@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Game {
@@ -99,10 +100,12 @@ public class Game {
         getProperties().add(new Property("GO TO JAIL", Property.Group.NONE, 0, 0, 0, new Position(30, 10, 10)));
 
         // chance & community chest
-        getProperties().add(new Property("COMMUNITY CHEST", Property.Group.NONE, 0, 0, 0, new Position(2, 0, 8),
-                new Position(17, 7, 0), new Position(33, 7, 10)));
-        getProperties().add(new Property("CHANCE", Property.Group.NONE, 0, 0, 0, new Position(7, 0, 3),
-                new Position(22, 10, 2), new Position(36, 4, 10)));
+        getProperties().add(new Property("COMMUNITY CHEST", Property.Group.NONE, 0, 0, 0, new Position(2, 0, 8)));
+        getProperties().add(new Property("COMMUNITY CHEST", Property.Group.NONE, 0, 0, 0, new Position(17, 7, 0)));
+        getProperties().add(new Property("COMMUNITY CHEST", Property.Group.NONE, 0, 0, 0, new Position(33, 7, 10)));
+        getProperties().add(new Property("CHANCE", Property.Group.NONE, 0, 0, 0, new Position(7, 0, 3)));
+        getProperties().add(new Property("CHANCE", Property.Group.NONE, 0, 0, 0, new Position(22, 10, 2)));
+        getProperties().add(new Property("CHANCE", Property.Group.NONE, 0, 0, 0, new Position(36, 4, 10)));
 
         // tax properties
         getProperties().add(new Property("INCOME TAX", Property.Group.NONE, 0, 200, 0, new Position(4, 0, 6)));
@@ -163,18 +166,38 @@ public class Game {
      */
     public Property getByPosition(int... position) {
         if (position.length == 1) { // if a simple one integer coord is passed
-            for (Property property : getProperties())
-                for (Position pos : property.getPositions())
-                    if (pos.getPosition() == position[0]) // compare position
-                        return property;
+            {
+                // search for property with position
+                Optional<Property> propFound = getProperties().stream().filter(property ->
+                                property.getPositions().stream().anyMatch(pos ->
+                                        pos.getPosition() == position[0])) // compare position
+                        .findFirst();
+                return propFound.orElse(null);
+            }
         } else if (position.length == 2) { // if a two integer coord is passed
-            for (Property property : getProperties())
-                for (Position pos : property.getPositions())
-                    if (pos.getX() == position[0] && pos.getY() == position[1]) // compare x & y
-                        return property;
+            // search for property with position
+            Optional<Property> propFound = getProperties().stream().filter(property ->
+                            property.getPositions().stream().anyMatch(pos ->
+                                    (pos.getX() == position[0] && pos.getY() == position[1]))) // compare position
+                    .findFirst();
+            return propFound.orElse(null);
         }
 
         return null; // position out of bounds or no property with coords
+    }
+
+    /**
+     * @param x The x coordinate to get the simple from.
+     * @param y The y coordinate to get the simple from.
+     * @return The found simple position.
+     */
+    public int getSimplePosition(int x, int y) {
+        for (Property property : getProperties()) {
+            Optional<Position> position = property.getPositions().stream()
+                    .filter(pos -> (pos.getX() == x && pos.getY() == y)).findFirst(); // compare coords
+            if (position.isPresent()) return position.get().getPosition();
+        }
+        return -1;
     }
 
     /**
@@ -244,7 +267,7 @@ public class Game {
 
         setCurrentPlayerTurn(upNextPlayer);
         getBoard().getCenter().getLogBox().append("\nIt's now " + upNextPlayer.getName() + "'s turn!");
-        getBoard().getCenter().getController().update();
+        getBoard().getCenter().getController().update(false);
 
         if (upNextPlayer.isInJail()) {
             upNextPlayer.setJailCounter(upNextPlayer.getJailCounter() + 1);

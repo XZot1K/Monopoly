@@ -9,11 +9,12 @@ import game.Game;
 import game.components.property.Property;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 
-public class Token implements Comparable<Token> {
+public class Token {
 
     private String name; // the name of the token
     private int money, // the money currently held by the token
@@ -39,12 +40,15 @@ public class Token implements Comparable<Token> {
     }
 
     /**
-     * @param distance the distance on the board to move the token
+     * @param distance the distance on the board to move the token.
+     * @return Whether to end the turn.
      */
-    public void move(int distance) {
+    public boolean move(int distance) {
+        Property property = null;
+
         //for the -3 card
         if (distance < 0) {
-            for (int i = 0; i > distance; i--) {
+            for (int i = (distance + 1); --i > distance; ) {
                 //set last location
                 setLastPosition(getSimplePosition());
 
@@ -52,11 +56,13 @@ public class Token implements Comparable<Token> {
                 setSimplePosition(getSimplePosition() - 1);
                 if (getSimplePosition() < 0) setSimplePosition(39);
             }
+
+            property = Game.INSTANCE.getByPosition(getSimplePosition()); // update property
         }
 
         //otherwise
         else {
-            for (int i = 0; i < distance; i++) {
+            for (int i = -1; ++i < distance; ) {
                 //set last location
                 setLastPosition(getSimplePosition());
 
@@ -64,24 +70,106 @@ public class Token implements Comparable<Token> {
                 setSimplePosition(getSimplePosition() + 1);
                 if (getSimplePosition() > 39) setSimplePosition(0);
 
-                //check for passing GO:
-                if (Game.INSTANCE.getByPosition(getSimplePosition() + distance).contains(0) && getLastPosition() == 39) {
-                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " passed go, and collected $200.");
+
+                //check for passing GO & update property:
+                if ((property = Game.INSTANCE.getByPosition(getSimplePosition())).contains(0) && getLastPosition() == 39) {
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + getName() + "\" passed go, and collected $200.");
                     setMoney(getMoney() + 200);
                 }
             }
         }
 
-        //set new location and repaint
-        setLocation(Game.INSTANCE.getByPosition(getSimplePosition()));
+        if (property != null) {
+            setLocation(property);
+
+            switch (property.getName()) {
+                case "FREE PARKING": {//free parking, remember to make bank player to be getting all the money
+                    final int gainedMoney = Math.max(100, Game.INSTANCE.getJackpot());
+                    setMoney(getMoney() + gainedMoney);
+                    Game.INSTANCE.setJackpot(0);
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " has won $" + gainedMoney + ".");
+                    break;
+                }
+
+                case "LUXURY TAX": {//luxury tax, pay $75
+                    setMoney(getMoney() - 75);
+                    //bank receives money
+                    Game.INSTANCE.setJackpot(Game.INSTANCE.getJackpot() + 75);
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " payed the bank $75.");
+                    break;
+                }
+
+                case "INCOME TAX": {
+                    Object[] objects = {"10%", "$200"};
+                    int result = JOptionPane.showOptionDialog(null, "Please choose a payment type:", "Payment Choice",
+                            JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, objects, objects[0]);
+
+                    if (result == JOptionPane.YES_OPTION) {
+                        //income tax, pay 10% of their balance
+                        final int lostMoney = (int) (getMoney() * 0.1);
+                        setMoney(getMoney() - lostMoney);
+                        //bank receives money
+                        Game.INSTANCE.setJackpot(Game.INSTANCE.getJackpot() + lostMoney);
+                        Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " payed the bank $" + lostMoney + ".");
+                    } else {
+                        //income tax, pay $200
+                        setMoney(getMoney() - 200);
+                        //bank receives money
+                        Game.INSTANCE.setJackpot(Game.INSTANCE.getJackpot() + 200);
+                        Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " payed the bank $200.");
+                    }
+                    break;
+                }
+
+                case "GO TO JAIL": {
+                    setInJail(true);
+                    setJailCounter(0);
+                    setLocation(Game.INSTANCE.getByPosition(0, 0));
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " has been sent to jail.");
+                    return true;
+                }
+
+                case "CHANCE": {
+
+
+                    break;
+                }
+
+                case "COMMUNITY CHEST": {
+
+
+                    break;
+                }
+
+                default: {
+
+                    if (property.getOwner() != null && property.getOwner() != this) {
+
+                        if (!property.isMortgaged()) {
+
+
+                        }
+
+                    }
+
+                    break;
+                }
+            }
+
+            Game.INSTANCE.getBoard().getCenter().getController().update(true);
+        }
+
+        //repaint
         Game.INSTANCE.getBoard().repaint();
+        return false;
     }
 
     /**
      * finds nearest util, re
      */
-    public void findNearestU() {
-        for (int i = 1; i < 20; i++) {
+    public Property findNearest(Property.Group group) {
+        Property property;
+        for (int i = 0; ++i < 20; ) {
             //set last location
             setLastPosition(getSimplePosition());
 
@@ -89,22 +177,22 @@ public class Token implements Comparable<Token> {
             setSimplePosition(getSimplePosition() + 1);
             if (getSimplePosition() > 39) setSimplePosition(0);
 
+            property = Game.INSTANCE.getByPosition(getSimplePosition());
+
             //check for passing GO:
             if (Game.INSTANCE.getByPosition(getSimplePosition()).contains(0) && getLastPosition() == 39) {
                 Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " passed go, and collected $200.");
                 setMoney(getMoney() + 200);
             }
 
-            //check for Rail road:
-            if (getSimplePosition() == 12 || getSimplePosition() == 28) {
-                //leaves the loop hopefully
-                break;
-            }
+            //check group:
+            if (property.getGroup() == group) return property;
         }
 
         //set new location and repaint
         setLocation(Game.INSTANCE.getByPosition(getSimplePosition()));
         Game.INSTANCE.getBoard().repaint();
+        return null;
     }
 
     // getters & setters
@@ -144,8 +232,6 @@ public class Token implements Comparable<Token> {
     public void setIcon(Icon icon) {this.icon = icon;}
 
     // compares tokens by name
-    @Override
-    public int compareTo(Token token) {return getName().compareToIgnoreCase(token.getName());}
 
     public boolean isInJail() {return inJail;}
 

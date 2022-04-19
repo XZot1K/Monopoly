@@ -169,10 +169,7 @@ public class Creation extends JFrame {
                     }
                 }
 
-                final Token token = new Token(playerName.getText()) {
-                    @Override
-                    public void move(int distance) {} // TODO implement
-                };
+                final Token token = new Token(playerName.getText());
                 token.setIcon((Token.Icon) icons.getSelectedItem());
                 Game.INSTANCE.getPlayers().add(token);
 

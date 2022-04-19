@@ -3,6 +3,7 @@ package game.components.gui;
 import game.Game;
 import game.components.entity.Token;
 import game.components.gui.board.BoardCenter;
+import game.components.property.Property;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,12 +13,15 @@ import java.util.HashMap;
 
 public class Controller extends JPanel {
 
+    private final Controller INSTANCE;
+
     private final BoardCenter center;
     private final HashMap<String, JButton> buttonMap;
 
     private final JLabel header;
 
     public Controller(BoardCenter center) {
+        this.INSTANCE = this;
         this.center = center;
         this.buttonMap = new HashMap<>();
 
@@ -34,13 +38,14 @@ public class Controller extends JPanel {
         header.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.setVisible(true);
         add(header);
+        add(Box.createRigidArea(new Dimension(50, 50)));
 
-        update();
+        update(false);
 
         setVisible(true);
     }
 
-    public void update() {
+    public void update(boolean postRoll) {
         getHeader().setText("<html>" + Game.INSTANCE.getCurrentPlayerTurn().getName() + "'s Turn<br>Money: "
                 + Game.INSTANCE.getCurrentPlayerTurn().getMoney() + "</html>");
 
@@ -49,7 +54,7 @@ public class Controller extends JPanel {
         final Token token = Game.INSTANCE.getCurrentPlayerTurn();
 
         if (!token.isInJail()) {
-            add(getButton("roll", true));
+            add(getButton("roll", !postRoll));
 
             if (token.getLocation().getOwner() != null && token.getLocation().getOwner().equals(token)) {
 
@@ -76,6 +81,11 @@ public class Controller extends JPanel {
             if (token.hasGOJCard()) add(getButton("useGOJCard", true));
             add(getButton("et", true));
         }
+
+        if (postRoll) add(getButton("et", true));
+
+        repaint();
+        revalidate();
     }
 
     private void buildButtons(Font font) {
@@ -134,12 +144,14 @@ public class Controller extends JPanel {
                 }
             }
         });
+        r4d.setVisible(true);
         buttonMap.put("r4d", r4d);
 
         JButton roll = new JButton("Roll");
         roll.setAlignmentX(Box.CENTER_ALIGNMENT);
         roll.setPreferredSize(new Dimension((int) (getWidth() * 0.08), (int) (getHeight() * 0.05)));
         roll.setFont(font);
+        roll.setVisible(true);
         roll.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -151,8 +163,7 @@ public class Controller extends JPanel {
 
                 Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " rolled a " + distance + "!");
 
-                currentPlayer.move(distance);
-                Game.INSTANCE.getBoard().repaint();
+                if (currentPlayer.move(distance)) Game.INSTANCE.nextTurn();
             }
         });
         buttonMap.put("roll", roll);
@@ -164,9 +175,36 @@ public class Controller extends JPanel {
         buy.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
+                final Property property = currentPlayer.getLocation();
 
+                if (property.isPurchasable()) {
+                    final int result = JOptionPane.showConfirmDialog(null, "Would you like to buy this property for $"
+                            + property.getBaseValue() + "?", "Are You Sure?", JOptionPane.YES_NO_OPTION);
+                    if (result == JOptionPane.YES_OPTION) {
+
+                        if (currentPlayer.getMoney() < property.getBaseValue()) {
+                            JOptionPane.showMessageDialog(null, "You are broke.", "Insufficient Funds", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        // disable the button
+                        ((Component) e.getSource()).setEnabled(false);
+
+                        // remove money from player
+                        currentPlayer.setMoney(currentPlayer.getMoney() - property.getBaseValue());
+
+                        // set owner of property
+                        property.setOwner(currentPlayer);
+
+                        // log purchase
+                        Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " has purchased the \""
+                                + property.getName() + "\" property!");
+                    }
+                }
             }
         });
+        buy.setVisible(true);
         buttonMap.put("buy", buy);
 
         JButton mortgage = new JButton("Mortgage Property");
@@ -202,8 +240,25 @@ public class Controller extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
 
+                final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
+                final Property property = currentPlayer.getLocation();
+
+                final int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to sell the \""
+                        + property.getName() + "\" for $" + property.getSellValue() + "? (All buildings will be sold)", "Are You Sure?", JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                    property.setHouses(0);
+                    property.setHotels(0);
+                    property.setOwner(null);
+                    currentPlayer.setMoney(currentPlayer.getMoney() + property.getSellValue());
+
+                    // log purchase
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " has sold the \""
+                            + property.getName() + "\" property.");
+                }
+
             }
         });
+        sell.setVisible(true);
         buttonMap.put("sell", sell);
 
         JButton build = new JButton("Build");
@@ -214,8 +269,52 @@ public class Controller extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
 
+                final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
+                final Property property = currentPlayer.getLocation();
+
+                if (property.canBuild(currentPlayer)) {
+
+                    if ((property.getHouses() + 1) > 4) {
+                        final int result = JOptionPane.showConfirmDialog(null,
+                                "Would you like to build a hotel on the \"" + property.getName() + "\" property?",
+                                "Are You Sure?", JOptionPane.YES_NO_OPTION);
+                        if (result == JOptionPane.YES_OPTION) {
+                            currentPlayer.setMoney(currentPlayer.getMoney() - property.getPerHouseCost());
+                            property.setHotels(1);
+                            property.setHouses(0);
+
+                            // log build
+                            Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " has built a hotel on the \""
+                                    + property.getName() + "\" property!");
+
+                            if (!property.canBuild(currentPlayer)) {
+                                // disable the button
+                                ((Component) e.getSource()).setEnabled(false);
+                            }
+                        }
+                    } else {
+                        final int result = JOptionPane.showConfirmDialog(null,
+                                "Would you like to build a house on the \"" + property.getName() + "\" property?",
+                                "Are You Sure?", JOptionPane.YES_NO_OPTION);
+                        if (result == JOptionPane.YES_OPTION) {
+                            currentPlayer.setMoney(currentPlayer.getMoney() - property.getPerHouseCost());
+                            property.setHouses(property.getHouses() + 1);
+
+                            // log build
+                            Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " has built a house on the \""
+                                    + property.getName() + "\" property!");
+
+                            if (!property.canBuild(currentPlayer)) {
+                                // disable the button
+                                ((Component) e.getSource()).setEnabled(false);
+                            }
+                        }
+                    }
+                }
+
             }
         });
+        build.setVisible(true);
         buttonMap.put("build", build);
 
         JButton useGOJCard = new JButton("Use \"Get Out of Jail\" Card");
@@ -231,17 +330,22 @@ public class Controller extends JPanel {
                 final int result = JOptionPane.showConfirmDialog(null, "Do you want to use your \"Get Out of Jail Free\" Card?",
                         "Are You Sure?", JOptionPane.YES_NO_OPTION);
                 if (result == JOptionPane.YES_OPTION) {
+
+                    // disable the button
+                    ((Component) e.getSource()).setEnabled(false);
+
                     currentPlayer.setGOJCard(false);
                     currentPlayer.setSellingGOJCard(false);
                     currentPlayer.setInJail(false);
                     currentPlayer.setJailCounter(0);
-                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + currentPlayer.getName() + "\" has been released from jail!");
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + currentPlayer.getName() + "\" has been released from jail.");
 
                     Game.INSTANCE.nextTurn();
                     Game.INSTANCE.getBoard().repaint();
                 }
             }
         });
+        useGOJCard.setVisible(true);
         buttonMap.put("useGOJCard", useGOJCard);
 
         JButton sellGOJCard = new JButton("Sell \"Get Out of Jail\" Card");
@@ -252,9 +356,23 @@ public class Controller extends JPanel {
         sellGOJCard.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
 
+                final int result = JOptionPane.showConfirmDialog(null, "Do you want to sell your \"Get Out of Jail Free\" Card for $50?",
+                        "Are You Sure?", JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                    // disable the button
+                    ((Component) e.getSource()).setEnabled(false);
+
+                    currentPlayer.setGOJCard(false);
+                    currentPlayer.setSellingGOJCard(false);
+                    currentPlayer.setMoney(currentPlayer.getMoney() + 50);
+
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + currentPlayer.getName() + "\" has sold their \"Get Out of Jail Free\" Card for $50.");
+                }
             }
         });
+        sellGOJCard.setVisible(true);
         buttonMap.put("sellGOJCard", sellGOJCard);
     }
 
