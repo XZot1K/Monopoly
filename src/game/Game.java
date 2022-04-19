@@ -241,9 +241,21 @@ public class Game {
      */
     public void nextTurn() {
         final Token upNextPlayer = Game.INSTANCE.getNextTurnPlayer();
+
         setCurrentPlayerTurn(upNextPlayer);
         getBoard().getCenter().getLogBox().append("\nIt's now " + upNextPlayer.getName() + "'s turn!");
         getBoard().getCenter().getController().update();
+
+        if (upNextPlayer.isInJail()) {
+            upNextPlayer.setJailCounter(upNextPlayer.getJailCounter() + 1);
+
+            if (upNextPlayer.getJailCounter() >= 3) {
+                upNextPlayer.setInJail(false);
+                upNextPlayer.setJailCounter(0);
+            }
+
+            nextTurn();
+        }
     }
 
     public void save() {

@@ -16,7 +16,10 @@ import java.net.URL;
 public class Token implements Comparable<Token> {
 
     private String name; // the name of the token
-    private int money; // the money currently held by the token
+    private int money, // the money currently held by the token
+            simplePosition,
+            lastPosition,
+            jailCounter;
 
     private Icon icon;
 
@@ -31,13 +34,77 @@ public class Token implements Comparable<Token> {
         setInJail(false);
         setGOJCard(false);
         setSellingGOJCard(false);
+        setSimplePosition(0);
+        setLastPosition(-1);
     }
 
     /**
      * @param distance the distance on the board to move the token
      */
     public void move(int distance) {
+        //for the -3 card
+        if (distance < 0) {
+            for (int i = 0; i > distance; i--) {
+                //set last location
+                setLastPosition(getSimplePosition());
 
+                //set new location
+                setSimplePosition(getSimplePosition() - 1);
+                if (getSimplePosition() < 0) setSimplePosition(39);
+            }
+        }
+
+        //otherwise
+        else {
+            for (int i = 0; i < distance; i++) {
+                //set last location
+                setLastPosition(getSimplePosition());
+
+                //set new location
+                setSimplePosition(getSimplePosition() + 1);
+                if (getSimplePosition() > 39) setSimplePosition(0);
+
+                //check for passing GO:
+                if (Game.INSTANCE.getByPosition(getSimplePosition() + distance).contains(0) && getLastPosition() == 39) {
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " passed go, and collected $200.");
+                    setMoney(getMoney() + 200);
+                }
+            }
+        }
+
+        //set new location and repaint
+        setLocation(Game.INSTANCE.getByPosition(getSimplePosition()));
+        Game.INSTANCE.getBoard().repaint();
+    }
+
+    /**
+     * finds nearest util, re
+     */
+    public void findNearestU() {
+        for (int i = 1; i < 20; i++) {
+            //set last location
+            setLastPosition(getSimplePosition());
+
+            //set new location
+            setSimplePosition(getSimplePosition() + 1);
+            if (getSimplePosition() > 39) setSimplePosition(0);
+
+            //check for passing GO:
+            if (Game.INSTANCE.getByPosition(getSimplePosition()).contains(0) && getLastPosition() == 39) {
+                Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " passed go, and collected $200.");
+                setMoney(getMoney() + 200);
+            }
+
+            //check for Rail road:
+            if (getSimplePosition() == 12 || getSimplePosition() == 28) {
+                //leaves the loop hopefully
+                break;
+            }
+        }
+
+        //set new location and repaint
+        setLocation(Game.INSTANCE.getByPosition(getSimplePosition()));
+        Game.INSTANCE.getBoard().repaint();
     }
 
     // getters & setters
@@ -91,6 +158,18 @@ public class Token implements Comparable<Token> {
     public boolean isSellingGOJCard() {return sellinggojCard;}
 
     public void setSellingGOJCard(boolean sellinggojCard) {this.sellinggojCard = sellinggojCard;}
+
+    public int getSimplePosition() {return simplePosition;}
+
+    public void setSimplePosition(int simplePosition) {this.simplePosition = simplePosition;}
+
+    public int getLastPosition() {return lastPosition;}
+
+    public void setLastPosition(int lastPosition) {this.lastPosition = lastPosition;}
+
+    public int getJailCounter() {return jailCounter;}
+
+    public void setJailCounter(int jailCounter) {this.jailCounter = jailCounter;}
 
     public enum Icon {
         THIMBLE, CAR, TOP_HAT, WHEELBARROW, SCOTTIE, FLAT_IRON, BOOT, BATTLESHIP;

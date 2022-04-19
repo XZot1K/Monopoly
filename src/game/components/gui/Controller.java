@@ -88,12 +88,11 @@ public class Controller extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
 
+                //bankrupt check
                 final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
                 if (currentPlayer.getMoney() <= 0) {
                     Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " has gone bankrupt!");
-
-                    // TODO more bankrupt
-
+                    Game.INSTANCE.getPlayers().remove(currentPlayer);
                 } else Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " chose to end their turn.");
 
                 Game.INSTANCE.nextTurn();
@@ -109,25 +108,30 @@ public class Controller extends JPanel {
         r4d.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
+                final int result = JOptionPane.showConfirmDialog(null, "Do you want to pay $50 and roll for doubles?",
+                        "Are You Sure?", JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                    final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
 
-                center.setRoll((int) (Math.random() * 6 + 1), (int) (Math.random() * 6 + 1)); // roll a number between 1 and 6 for the left & right die
+                    center.setRoll((int) (Math.random() * 6 + 1), (int) (Math.random() * 6 + 1)); // roll a number between 1 and 6 for the left & right die
 
-                if (center.getRoll()[0] == center.getRoll()[1]) {
-                    currentPlayer.setInJail(false);
-                    JOptionPane.showMessageDialog(null, "Congratulations " + currentPlayer.getName() + ", you have rolled doubles! Next turn\n"
-                            + " you may return to the street!", "Got Lucky!", JOptionPane.INFORMATION_MESSAGE);
+                    if (center.getRoll()[0] == center.getRoll()[1]) {
+                        currentPlayer.setInJail(false);
+                        currentPlayer.setJailCounter(0);
+                        JOptionPane.showMessageDialog(null, "Congratulations " + currentPlayer.getName() + ", you have rolled doubles! Next turn\n"
+                                + " you may return to the street!", "Got Lucky!", JOptionPane.INFORMATION_MESSAGE);
 
-                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " was very lucky and rolled doubles!");
-                } else {
-                    JOptionPane.showMessageDialog(null, "Well, The good news is you have another free meal \n"
-                            + "to look forward to! The bad news is you are still in jail and slightly more broke...", "Not So Lucky!", JOptionPane.INFORMATION_MESSAGE);
+                        Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " was very lucky and rolled doubles!");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Well, The good news is you have another free meal \n"
+                                + "to look forward to! The bad news is you are still in jail and slightly more broke...", "Not So Lucky!", JOptionPane.INFORMATION_MESSAGE);
 
-                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " needs to find a lucky charm or something!");
+                        Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + currentPlayer.getName() + " needs to find a lucky charm or something!");
+                    }
+
+                    Game.INSTANCE.nextTurn();
+                    Game.INSTANCE.getBoard().repaint();
                 }
-
-                Game.INSTANCE.nextTurn();
-                Game.INSTANCE.getBoard().repaint();
             }
         });
         buttonMap.put("r4d", r4d);
@@ -222,7 +226,20 @@ public class Controller extends JPanel {
         useGOJCard.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                final Token currentPlayer = Game.INSTANCE.getCurrentPlayerTurn();
 
+                final int result = JOptionPane.showConfirmDialog(null, "Do you want to use your \"Get Out of Jail Free\" Card?",
+                        "Are You Sure?", JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                    currentPlayer.setGOJCard(false);
+                    currentPlayer.setSellingGOJCard(false);
+                    currentPlayer.setInJail(false);
+                    currentPlayer.setJailCounter(0);
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + currentPlayer.getName() + "\" has been released from jail!");
+
+                    Game.INSTANCE.nextTurn();
+                    Game.INSTANCE.getBoard().repaint();
+                }
             }
         });
         buttonMap.put("useGOJCard", useGOJCard);
