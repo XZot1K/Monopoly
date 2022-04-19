@@ -31,10 +31,9 @@ public class Controller extends JPanel {
         header = new JLabel("<html>" + Game.INSTANCE.getCurrentPlayerTurn().getName() + "'s Turn<br>Money: "
                 + Game.INSTANCE.getCurrentPlayerTurn().getMoney() + "</html>");
         header.setFont(font.deriveFont(16f));
-        header.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        header.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.setVisible(true);
         add(header);
-        add(Box.createVerticalGlue());
 
         update();
 
@@ -45,8 +44,7 @@ public class Controller extends JPanel {
         getHeader().setText("<html>" + Game.INSTANCE.getCurrentPlayerTurn().getName() + "'s Turn<br>Money: "
                 + Game.INSTANCE.getCurrentPlayerTurn().getMoney() + "</html>");
 
-        Arrays.stream(getComponents()).filter(component -> (component instanceof JButton
-                || component instanceof Box.Filler)).forEach(this::remove); // remove all buttons from the panel
+        Arrays.stream(getComponents()).filter(JButton.class::isInstance).forEach(this::remove); // remove all buttons from the panel
 
         final Token token = Game.INSTANCE.getCurrentPlayerTurn();
 

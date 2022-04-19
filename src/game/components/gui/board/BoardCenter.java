@@ -34,7 +34,6 @@ public class BoardCenter extends JPanel {
         add((controller = new Controller(this)), 1);
         add((logBox = new LogBox()).getScrollPane(), 2);
 
-
         update();
         setVisible(true);
     }

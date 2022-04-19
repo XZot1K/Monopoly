@@ -29,7 +29,7 @@ public class Board extends JFrame {
         setPreferredSize(new Dimension(gameInstance.getEnteredSize(), gameInstance.getEnteredSize()));
         setMinimumSize(new Dimension(getContentPane().getWidth(), getContentPane().getHeight()));
 
-        setTitle("Monopoly - Turn 1"); // update title of frame
+        setTitle("Monopoly"); // update title of frame
         setDefaultCloseOperation(EXIT_ON_CLOSE); // exit on close
         setLayout(null); // set the JFrame's layout to null as an initializer (will be updated later anyway)
 
@@ -153,7 +153,6 @@ public class Board extends JFrame {
             }
         });
 
-
         pack(); // pack the frame
 
         // set the frame size & set its minimum dimensions/size to that same value to keep things clean
@@ -161,29 +160,6 @@ public class Board extends JFrame {
         setPreferredSize(new Dimension(gameInstance.getEnteredSize(), gameInstance.getEnteredSize()));
         setMinimumSize(new Dimension(getWidth(), getHeight()));
         setVisible(true); // make the frame visible
-    }
-
-
-    @Override
-    public void paint(Graphics g) {
-        super.paint(g);
-
-       /* final Graphics2D g2 = (Graphics2D) g.create(); // 2d graphics
-
-        g2.dispose(); // dispose changes to graphics*/
-    }
-
-    private void tooltipHelper(Graphics2D g2, int x, int y, int width, int height) {
-        g2.fillRoundRect(x, y, width, height, 20, 20); // draw a nice white box
-
-      /*  // set the color to that of the group the property belongs to
-        // g2.setColor(getPropertyMouseOver().getProperty().getGroup().getColor());
-        g2.drawRect(x, y, width, height); // draw a nice hollow box with the colored border
-
-        // set color to black & create a new font then set it
-        g2.setColor(Color.BLACK);
-        final Font font = new Font("Arial Black", Font.BOLD, 14);
-        g2.setFont(font);*/
     }
 
     /**

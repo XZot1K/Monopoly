@@ -203,7 +203,8 @@ public class Game {
     public boolean ownsAll(Property.Group group, String playerName) {
         for (Property property : getProperties().stream().filter(property ->
                 (property.getGroup() == group)).collect(Collectors.toList())) {
-            if (property.getOwner() == null || (property.getOwner() != null && !property.getOwner().getName().equalsIgnoreCase(playerName)))
+            if (property.getOwner() == null || (property.getOwner() != null
+                    && !property.getOwner().getName().equalsIgnoreCase(playerName)))
                 return false;
         }
         return true;
