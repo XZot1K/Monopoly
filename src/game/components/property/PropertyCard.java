@@ -15,7 +15,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 
@@ -36,20 +35,19 @@ public class PropertyCard extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-                super.mouseClicked(e);
-
                 // check if the selected property is null or not the same as this card
                 if (Game.INSTANCE.getSelectedProperty() == null) {
-                    Game.INSTANCE.setSelectedProperty(CARD_INSTANCE);
+                    Game.INSTANCE.setSelectedProperty(getProperty());
                     Game.INSTANCE.getBoard().repaint(); // repaint the board
-                } else if (Game.INSTANCE.getSelectedProperty() == CARD_INSTANCE) {
+                } else if (Game.INSTANCE.getSelectedProperty() == getProperty()) {
                     Game.INSTANCE.setSelectedProperty(null); // reset selected property
                     Game.INSTANCE.getBoard().repaint(); // repaint the board
-                } else if (Game.INSTANCE.getSelectedProperty() != CARD_INSTANCE) {
-                    Game.INSTANCE.setSelectedProperty(CARD_INSTANCE); // set new selected property
+                } else if (Game.INSTANCE.getSelectedProperty() != getProperty()) {
+                    Game.INSTANCE.setSelectedProperty(getProperty()); // set new selected property
                     Game.INSTANCE.getBoard().repaint(); // repaint the board
                 }
 
+                super.mouseClicked(e);
             }
 
         });
@@ -65,7 +63,7 @@ public class PropertyCard extends JPanel {
         final AffineTransform original = (AffineTransform) g2.getTransform().clone(); // original transform
 
         // color the panel size to white
-        g2.setColor(Color.WHITE);
+        g2.setColor(getProperty().isMortgaged() ? Color.LIGHT_GRAY : Color.WHITE);
         g2.fillRect(0, 0, getWidth(), getHeight());
 
         if (getProperty().isCorner()) { // if the property is a corner piece
@@ -271,7 +269,6 @@ public class PropertyCard extends JPanel {
                         final URL url = Game.class.getResource("/resources/utilities/ww.png"); // load bottom image
                         if (url != null) {
                             // scale it down some and draw it to the panel
-                            // g2.scale(1, 0.78);
                             g2.drawImage(ImageIO.read(url), 0, 0, getWidth(), getHeight(), this);
                             g2.setTransform(original);
                         }
@@ -580,77 +577,94 @@ public class PropertyCard extends JPanel {
             g2.setTransform(original);  // reset the transform
         }
 
-        if (Game.INSTANCE.getSelectedProperty() != null && Game.INSTANCE.getSelectedProperty() == this) {
+        if (Game.INSTANCE.getSelectedProperty() != null && Game.INSTANCE.getSelectedProperty() == getProperty()) {
             // color the panel size to white
             g2.setColor(Color.PINK);
             g2.setStroke(new BasicStroke(5));
             g2.drawRect(0, 0, (int) (getWidth() - (getWidth() * 0.008)), (int) (getHeight() - (getHeight() * 0.008)));
         }
 
-        drawTokens(g2);
+        drawTokens(g2); // draw tokens
     }
 
+    /**
+     * Draws the tokens/players onto the card at which they belong based on conditions.
+     *
+     * @param g2 The 2d graphics handler.
+     */
     private void drawTokens(Graphics2D g2) {
         final boolean isSide = (quadrant == Board.Quadrant.LEFT || quadrant == Board.Quadrant.RIGHT),
                 isJailCorner = getProperty().getName().equals("IN JAIL/JUST VISITING");
         final int longSide = (isSide ? getWidth() : getHeight()), shortSide = (isSide ? getHeight() : getWidth());
 
-        int offsetX = (int) (getWidth() * ((quadrant == Board.Quadrant.RIGHT) ? 0.25 : 0.03)), offsetY = (int) (getHeight() * ((quadrant == Board.Quadrant.BOTTOM) ? 0.25 : 0.03));
+        // offsets
+        int offsetX = (int) (getWidth() * ((quadrant == Board.Quadrant.RIGHT) ? 0.25 : 0.03)),
+                offsetY = (int) (getHeight() * ((quadrant == Board.Quadrant.BOTTOM) ? 0.25 : 0.03));
+
+        // loop tokens
         for (Token token : Game.INSTANCE.getPlayers()) {
-            if (token == null || token.getIcon() == null || !getProperty().contains(token.getSimplePosition())) continue;
 
-            if (isJailCorner) {
-                if (token.isInJail()) continue;
+            // determine if this card is the same as their property location
+            if (token == null || token.getIcon() == null || !getProperty().isSame(token.getLocation().getPosition().getSimplePosition())) continue;
 
+            if (isJailCorner) { // if jail corner
+
+                if (token.isInJail()) continue; // skip if in jail
+
+                // offsets
                 if (offsetX > (int) (longSide * 0.95)) {
                     offsetX = (int) (longSide * 0.03);
                     offsetY += (int) (shortSide * 0.25);
                 }
 
+                // draw token
                 g2.drawImage(token.getIcon().get(), offsetX, offsetY, (int) (getWidth() * 0.25), (int) (getHeight() * 0.25), this);
 
+                // increase offset based on side length
                 if (offsetY < (int) (shortSide * 0.25)) offsetX += (int) ((longSide * (property.isCorner() ? 1 : 0.7)) / 4);
                 else offsetY += (int) ((shortSide * (property.isCorner() ? 1 : 0.7)) / 4);
                 continue;
             }
 
-            if (offsetX > (int) (longSide * 0.6)) {
+            // check the offsets
+            if (offsetX > (int) (longSide * (property.isCorner() ? 0.7 : 0.65))) {
                 offsetX = (int) (longSide * 0.05);
                 offsetY += (int) (shortSide * 0.3);
             }
 
+            // draw token
             g2.drawImage(token.getIcon().get(), offsetX, offsetY, (int) (getWidth() * 0.25), (int) (getHeight() * 0.25), this);
 
-            offsetX += (int) ((longSide * (property.isCorner() ? 0.95 : 0.7)) / 3);
+            // increase offset
+            offsetX += (int) ((longSide * (property.isCorner() ? 0.95 : (property.isCorner() ? 0.7 : 0.63))) / 3);
         }
 
-        if (isJailCorner) {
+        if (isJailCorner) { // if jail corner
+
+            // offsets
             offsetX = (int) (getWidth() * 0.3);
             offsetY = (int) (getHeight() * 0.31);
-            for (Token token : Game.INSTANCE.getPlayers()) {
-                if (token == null || !token.isInJail() || token.getIcon() == null || !getProperty().contains(token.getSimplePosition())) continue;
 
+            // loop tokens
+            for (Token token : Game.INSTANCE.getPlayers()) {
+
+                // determine if this card is the same as their property location
+                if (token == null || !token.isInJail() || token.getIcon() == null
+                        || !getProperty().isSame(token.getLocation().getPosition().getSimplePosition())) continue;
+
+                // check the offsets
                 if (offsetX > (int) (longSide * 0.95)) {
                     offsetX = (int) (longSide * 0.3);
                     offsetY += (int) (shortSide * 0.23);
                 }
 
+                // draw token
                 g2.drawImage(token.getIcon().get(), offsetX, offsetY, (int) (getWidth() * 0.25), (int) (getHeight() * 0.25), this);
 
+                // increase offset
                 offsetX += (int) ((longSide * 0.72) / 3);
             }
         }
-    }
-
-    /**
-     * @return Converts the property card JPanel into a BufferedImage.
-     */
-    public BufferedImage toImage() {
-        BufferedImage img = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB); // RGB buffered image instance
-        Graphics2D g2d = img.createGraphics(); // create new 2s graphics
-        print(g2d); // print the image
-        g2d.dispose(); // dispose changes
-        return img; // return the image
     }
 
     /**
@@ -662,6 +676,5 @@ public class PropertyCard extends JPanel {
      * @return The quadrant the property is a part of.
      */
     public Board.Quadrant getQuadrant() {return quadrant;}
-
 
 }

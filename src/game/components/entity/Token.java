@@ -7,6 +7,8 @@ package game.components.entity;
 
 import game.Game;
 import game.components.property.Property;
+import game.components.special.Chance;
+import game.components.special.CommunityChest;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -18,13 +20,15 @@ public class Token {
 
     private String name; // the name of the token
     private int money, // the money currently held by the token
-            simplePosition,
-            lastPosition,
-            jailCounter;
+            simplePosition, // simple coordinate between 0 and 39 for their current location
+            lastPosition, // simple coordinate between 0 and 39 of their last location
+            jailCounter; // turn counter for jail
 
-    private Icon icon;
+    private Icon icon; // the icon
 
-    private boolean inJail, gojCard, sellinggojCard;
+    private boolean inJail, // whether player is in jail
+            gojCard, // if the player has a "Get Out of Jail Free" card
+            sellinggojCard; // whether the player is selling their "Get Out of Jail Free" card
 
     private Property location; // the property the token is located at (position)
 
@@ -32,11 +36,13 @@ public class Token {
         setName(name); // initialize the token name, given the parameter
         setMoney(1500); // initialize the money held by the token (rules state 1500)
         setLocation(Game.INSTANCE.getByPosition(0, 10)); // set default position to GO
+
+        // initialize variables
         setInJail(false);
         setGOJCard(false);
         setSellingGOJCard(false);
         setSimplePosition(0);
-        setLastPosition(-1);
+        setLastPosition(-1); // -1 represents no last location
     }
 
     /**
@@ -48,16 +54,8 @@ public class Token {
 
         //for the -3 card
         if (distance < 0) {
-            for (int i = (distance + 1); --i > distance; ) {
-                //set last location
-                setLastPosition(getSimplePosition());
-
-                //set new location
-                setSimplePosition(getSimplePosition() - 1);
-                if (getSimplePosition() < 0) setSimplePosition(39);
-            }
-
-            property = Game.INSTANCE.getByPosition(getSimplePosition()); // update property
+            final int newPos = (getSimplePosition() - 3);
+            property = Game.INSTANCE.getByPosition((newPos < 0) ? (39 - newPos) : newPos); // update property
         }
 
         //otherwise
@@ -72,7 +70,7 @@ public class Token {
 
 
                 //check for passing GO & update property:
-                if ((property = Game.INSTANCE.getByPosition(getSimplePosition())).contains(0) && getLastPosition() == 39) {
+                if ((property = Game.INSTANCE.getByPosition(getSimplePosition())).isSame(0) && getLastPosition() == 39) {
                     Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + getName() + "\" passed go, and collected $200.");
                     setMoney(getMoney() + 200);
                 }
@@ -82,28 +80,43 @@ public class Token {
         if (property != null) {
             setLocation(property);
 
+            if (property.getPropertyCard() != null) Game.INSTANCE.setSelectedProperty(property);
+
             switch (property.getName()) {
-                case "FREE PARKING": {//free parking, remember to make bank player to be getting all the money
+                case "FREE PARKING": {
+                    //free parking, remember to make bank player to be getting all the money
                     final int gainedMoney = Math.max(100, Game.INSTANCE.getJackpot());
                     setMoney(getMoney() + gainedMoney);
                     Game.INSTANCE.setJackpot(0);
+
+                    // dialog for gaining money
+                    JOptionPane.showMessageDialog(null, "You have gained $" + gainedMoney
+                            + " from the jackpot!", "FREE PARKING", JOptionPane.INFORMATION_MESSAGE);
+
+                    // log action
                     Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " has won $" + gainedMoney + ".");
                     break;
                 }
 
-                case "LUXURY TAX": {//luxury tax, pay $75
+                case "LUXURY TAX": {
+                    //luxury tax, pay $75
                     setMoney(getMoney() - 75);
                     //bank receives money
                     Game.INSTANCE.setJackpot(Game.INSTANCE.getJackpot() + 75);
+
+                    // log action
                     Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " payed the bank $75.");
                     break;
                 }
 
                 case "INCOME TAX": {
-                    Object[] objects = {"10%", "$200"};
-                    int result = JOptionPane.showOptionDialog(null, "Please choose a payment type:", "Payment Choice",
+                    Object[] objects = {"10%", "$200"}; // selectable options for the option dialog
+
+                    // new option dialog for multi-option selection
+                    int result = JOptionPane.showOptionDialog(null, "Please choose a payment type:", "INCOME TAX - Payment Choice",
                             JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, objects, objects[0]);
 
+                    // if 10% was selected
                     if (result == JOptionPane.YES_OPTION) {
                         //income tax, pay 10% of their balance
                         final int lostMoney = (int) (getMoney() * 0.1);
@@ -122,45 +135,74 @@ public class Token {
                 }
 
                 case "GO TO JAIL": {
+                    // send to jail
                     setInJail(true);
                     setJailCounter(0);
-                    setLocation(Game.INSTANCE.getByPosition(0, 0));
+                    setLocation(Game.INSTANCE.getByPosition(10));
+
+                    // dialog for going to jail
+                    JOptionPane.showMessageDialog(null, "Looks like you messed up... Good news is "
+                            + "it only gets worse from here!", "GO TO JAIL", JOptionPane.WARNING_MESSAGE);
+
+                    // log action
                     Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " has been sent to jail.");
                     return true;
                 }
 
                 case "CHANCE": {
+                    // log action
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " has drawn a \"CHANCE\" card.");
 
-
+                    // draw and apply new chance card
+                    final Chance chance = Chance.draw();
+                    chance.apply(this);
                     break;
                 }
 
                 case "COMMUNITY CHEST": {
+                    // log action
+                    Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " has drawn a \"COMMUNITY CHEST\" card.");
 
-
+                    // draw and apply new community chest card
+                    final CommunityChest communityChest = CommunityChest.draw();
+                    communityChest.apply(this);
                     break;
                 }
 
                 default: {
 
+                    // check if property has an owner
                     if (property.getOwner() != null && property.getOwner() != this) {
 
-                        if (!property.isMortgaged()) {
+                        if (!property.isMortgaged()) { // check if the property is mortgaged
 
+                            // set current player's money
+                            final int amountToRemove = Math.min(getMoney(), property.getRent());
+                            Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + getName() + "\" has paid \""
+                                    + property.getOwner().getName() + "\" $" + amountToRemove + " for rent.");
 
-                        }
+                            setMoney(getMoney() - amountToRemove); // remove money
 
+                            // give money to property owner
+                            property.getOwner().setMoney(property.getOwner().getMoney() + amountToRemove);
+
+                            // notify about rent payment
+                            JOptionPane.showMessageDialog(null, "You have landed on \"" + property.getName()
+                                    + "\" which is owned by \"" + property.getOwner().getName() + "\". You pay $" + property.getRent()
+                                    + " in rent.", "Pay Up!", JOptionPane.INFORMATION_MESSAGE);
+
+                        } else
+
+                            // notify that there was no rent to pay
+                            JOptionPane.showMessageDialog(null, "", "Lucky Day!", JOptionPane.INFORMATION_MESSAGE);
                     }
 
                     break;
                 }
             }
-
-            Game.INSTANCE.getBoard().getCenter().getController().update(true);
         }
 
-        //repaint
-        Game.INSTANCE.getBoard().repaint();
+        Game.INSTANCE.updateBoard(); // update game board
         return false;
     }
 
@@ -169,7 +211,7 @@ public class Token {
      */
     public Property findNearest(Property.Group group) {
         Property property;
-        for (int i = 0; ++i < 20; ) {
+        do {
             //set last location
             setLastPosition(getSimplePosition());
 
@@ -180,19 +222,57 @@ public class Token {
             property = Game.INSTANCE.getByPosition(getSimplePosition());
 
             //check for passing GO:
-            if (Game.INSTANCE.getByPosition(getSimplePosition()).contains(0) && getLastPosition() == 39) {
+            if (property.isSame(0) && getLastPosition() == 39) {
+                // log action
                 Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " passed go, and collected $200.");
-                setMoney(getMoney() + 200);
+                setMoney(getMoney() + 200); // gain $200
             }
 
-            //check group:
-            if (property.getGroup() == group) return property;
-        }
+        } while (property.getGroup() != group); //check group
+
+        //set new location and repaint
+        setLocation(property);
+        Game.INSTANCE.updateBoard();
+        return property;
+    }
+
+    /**
+     * @param propertyName property to move to by name.
+     * @param passGoCheck  Whether to collect $200 when passing go.
+     */
+    public void travel(String propertyName, boolean passGoCheck) {
+        Property property;
+        do {
+            //set last location
+            setLastPosition(getSimplePosition());
+
+            //set new location
+            setSimplePosition(getSimplePosition() + 1);
+            if (getSimplePosition() > 39) setSimplePosition(0);
+
+            property = Game.INSTANCE.getByPosition(getSimplePosition());
+
+            //check for passing GO:
+            if (passGoCheck && property.isSame(0) && getLastPosition() == 39) {
+                // log action
+                Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " passed go, and collected $200.");
+                setMoney(getMoney() + 200); // gain $200
+            }
+
+        } while (!property.getName().equalsIgnoreCase(propertyName)); // loop until proper is found
 
         //set new location and repaint
         setLocation(Game.INSTANCE.getByPosition(getSimplePosition()));
-        Game.INSTANCE.getBoard().repaint();
-        return null;
+
+        // log action
+        Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n" + getName() + " has advanced to \"" + property.getName() + "\".");
+        Game.INSTANCE.updateBoard(); // update board
+    }
+
+    @Override
+    public String toString() {
+        return (getName() + "," + getMoney() + "," + getSimplePosition() + "," + getIcon().name()
+                + "," + isInJail() + "," + getJailCounter() + "," + hasGOJCard() + "," + isSellingGOJCard());
     }
 
     // getters & setters
@@ -215,7 +295,18 @@ public class Token {
     /**
      * @param money The amount to set as the token's balance.
      */
-    public void setMoney(int money) {this.money = money;}
+    public void setMoney(int money) {
+        this.money = money;
+
+        // check for bankruptcy
+        if (this.money <= 0) {
+            Game.INSTANCE.nextTurn(); // next turn
+            Game.INSTANCE.getPlayers().remove(this); // unregister the player
+
+            // log action
+            Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + getName() + "\" has gone bankrupt.");
+        }
+    }
 
     /**
      * @return The token's current position on the board.
@@ -225,36 +316,85 @@ public class Token {
     /**
      * @param location The location to set as the current position of the token.
      */
-    public void setLocation(Property location) {this.location = location;}
+    public void setLocation(Property location) {
+        // update last location to current and set new location alongside the simple position associated to it
+        if (getLocation() != null) setLastPosition(getLocation().getPosition().getSimplePosition());
+        setSimplePosition((this.location = location).getPosition().getSimplePosition());
 
+        // only repaint board if it's been created
+        if (Game.INSTANCE.getBoard() != null)
+            Game.INSTANCE.updateBoard();
+    }
+
+    /**
+     * @return The player's icon.
+     */
     public Icon getIcon() {return icon;}
 
+    /**
+     * @param icon The icon to set as the player's icon
+     */
     public void setIcon(Icon icon) {this.icon = icon;}
 
-    // compares tokens by name
-
+    /**
+     * @return Whether the player is in jail
+     */
     public boolean isInJail() {return inJail;}
 
+    /**
+     * @param inJail Whether the player should be in jail or not
+     */
     public void setInJail(boolean inJail) {this.inJail = inJail;}
 
+    /**
+     * @return If the player has a "Get Out of Jail Free" card.
+     */
     public boolean hasGOJCard() {return gojCard;}
 
+    /**
+     * @param gojCard Whether the player should have a "Get Out of Jail Free" card.
+     */
     public void setGOJCard(boolean gojCard) {this.gojCard = gojCard;}
 
+    /**
+     * @return If the player is selling a "Get Out of Jail Free" card.
+     */
     public boolean isSellingGOJCard() {return sellinggojCard;}
 
+
+    /**
+     * @param sellinggojCard If the player should be selling a "Get Out of Jail Free" card.
+     */
     public void setSellingGOJCard(boolean sellinggojCard) {this.sellinggojCard = sellinggojCard;}
 
+    /**
+     * @return The simple property position (can be 0-39).
+     */
     public int getSimplePosition() {return simplePosition;}
 
+    /**
+     * @param simplePosition A simple property position between 0 and 39.
+     */
     public void setSimplePosition(int simplePosition) {this.simplePosition = simplePosition;}
 
+    /**
+     * @return The last simple property position (can be 0-39).
+     */
     public int getLastPosition() {return lastPosition;}
 
+    /**
+     * @param lastPosition A last simple property position between 0 and 39.
+     */
     public void setLastPosition(int lastPosition) {this.lastPosition = lastPosition;}
 
+    /**
+     * @return The counter for how many turns the player has been in jail.
+     */
     public int getJailCounter() {return jailCounter;}
 
+    /**
+     * @param jailCounter The new counter for how long the player has been in jail.
+     */
     public void setJailCounter(int jailCounter) {this.jailCounter = jailCounter;}
 
     public enum Icon {

@@ -7,17 +7,15 @@ package game.components.property;
 
 import game.Game;
 import game.components.entity.Token;
+import game.components.gui.board.Board;
 
-import javax.naming.InsufficientResourcesException;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
 
 public class Property { // NOTE: a property is just a location on the road (game board) so it doesn't have to be purchasable
 
     private final String name; // name of the property
     private final Group group; // the general group the property is a part of
-    private final ArrayList<Position> positions; // the positions where this property is located (since locations like "chance" have several)
+    private final Position position; // the position where this property is located (since locations like "chance" have several)
     private final int baseValue, // its money base worth/value/cost
             baseRent, // the base the money rent
             mortgage; // the mortgage cost
@@ -26,30 +24,37 @@ public class Property { // NOTE: a property is just a location on the road (game
     private boolean mortgaged; // whether the property is in mortgaged state
     private Token owner; // the current owner, if any
 
+    private PropertyCard propertyCard; // property card
+
     /**
      * @param name      The name of the property.
      * @param group     The group the property belongs to.
      * @param baseValue The base cost/value of the property.
-     * @param positions The positions associated with the property.
-     * @throws InsufficientResourcesException Insufficient positions were provided
      */
-    public Property(String name, Group group, int baseValue, int baseRent, int mortgage, Position... positions) throws InsufficientResourcesException {
-
+    public Property(String name, Group group, int baseValue, int baseRent, int mortgage, Position position) {
         // initialize variables
         this.name = name;
         this.group = group;
         this.baseValue = baseValue;
         this.baseRent = baseRent;
         this.mortgage = mortgage;
-        this.positions = new ArrayList<>();
+        this.position = position;
         setOwner(null);
         setHouses(0);
         setHotels(0);
 
-        if (positions.length <= 0) // no positions
-            throw new InsufficientResourcesException("No positions were provided.");
+        // determine which quadrant the property belongs to in sets of 10
+        Board.Quadrant quadrant;
+        if (getPosition().getSimplePosition() >= 0 && getPosition().getSimplePosition() < 10)
+            quadrant = Board.Quadrant.LEFT;
+        else if (getPosition().getSimplePosition() >= 10 && getPosition().getSimplePosition() < 20)
+            quadrant = Board.Quadrant.TOP;
+        else if (getPosition().getSimplePosition() >= 20 && getPosition().getSimplePosition() < 30)
+            quadrant = Board.Quadrant.RIGHT;
+        else quadrant = Board.Quadrant.BOTTOM;
 
-        Collections.addAll(getPositions(), positions); // add all positions to the positions list
+        // create and setup property card for the property
+        setPropertyCard(new PropertyCard(this, quadrant));
     }
 
     /**
@@ -59,25 +64,19 @@ public class Property { // NOTE: a property is just a location on the road (game
 
     /**
      * @param coords The coordinates to check for, can be either 0-39 or the layout coordinates x: <0-10>, y: <0-10>.
-     * @return if the coordinate was found in the property positions.
+     * @return If the property's position matches the provided coordinates.
      */
-    public boolean contains(int... coords) {
-        if (coords.length == 1) {
-            for (Position position : getPositions())
-                if (position.getPosition() == coords[0]) return true;
-        } else if (coords.length == 2) {
-            for (Position position : getPositions())
-                if (position.getX() == coords[0] && position.getY() == coords[1])
-                    return true;
-        }
-
+    public boolean isSame(int... coords) {
+        if (coords.length == 1) return position.getSimplePosition() == coords[0];
+        else if (coords.length == 2)
+            return position.getX() == coords[0] && position.getY() == coords[1];
         return false;
     }
 
     /**
      * @return checks if a corner's coordinates are contained in the property positions & returns the result.
      */
-    public boolean isCorner() {return (contains(0, 0) || contains(0, 10) || contains(10, 0) || contains(10, 10));}
+    public boolean isCorner() {return (isSame(0) || isSame(10) || isSame(20) || isSame(30));}
 
     /**
      * @return Checks if the location is a purchasable property.
@@ -89,10 +88,14 @@ public class Property { // NOTE: a property is just a location on the road (game
      * @return If the property can have a house or hotel built.
      */
     public boolean canBuild(Token token) {
-        return (Game.INSTANCE.ownsAll(getGroup(), token.getName())
+        return (getGroup() != Group.UTILITIES && getGroup() != Group.STATIONS && getGroup() != Group.NONE
+                && Game.INSTANCE.ownsAll(getGroup(), token.getName())
                 && getHotels() <= 0 && getHouses() < 4 && token.getMoney() >= getPerHouseCost());
     }
 
+    /**
+     * @return The cost to build a house/hotel on the property.
+     */
     public int getPerHouseCost() {
         switch (getGroup()) {
             case BROWN:
@@ -116,18 +119,30 @@ public class Property { // NOTE: a property is just a location on the road (game
         }
     }
 
+    /**
+     * @return The sell price of the property based on buildings.
+     */
     public int getSellValue() {
         return ((getHotelRent() > 0) ? ((getPerHouseCost() * 5) / 2) // return half of hotel purchase price
                 : ((getHouses() > 0) ? ((getPerHouseCost() * getHouses()) / 2) : 0)); // return half of houses purchase price
     }
 
+    /**
+     * @return The rent based on rules for specific properties, buildings, etc.
+     */
     public int getRent() {
+        // handle $25 * the number of stations/railroads owned
         if (getGroup() == Group.STATIONS) return (25 * (getOwner() != null ? Game.INSTANCE.getOwnedProperties(Group.STATIONS, getOwner().getName()).size() : 1));
+
+            // handle cost based on buildings as long as the player also owns all in the same group
         else if (getHouses() == 0 && getHotels() == 0) return ((getOwner() != null && Game.INSTANCE.ownsAll(getGroup(),
                 getOwner().getName())) ? (getBaseRent() * 2) : getBaseRent());
         else return ((getHotels() * getHotelRent()) + (getHouses() * 3) * getHouseRent());
     }
 
+    /**
+     * @return Gets the rent house increase based on the base rent value.
+     */
     private int getHouseRent() {
         switch (getBaseRent()) {
             case 2:
@@ -167,6 +182,9 @@ public class Property { // NOTE: a property is just a location on the road (game
         }
     }
 
+    /**
+     * @return Gets the hotel rent value based on the base rent value.
+     */
     private int getHotelRent() {
         switch (getBaseRent()) {
             case 2:
@@ -206,7 +224,17 @@ public class Property { // NOTE: a property is just a location on the road (game
         }
     }
 
-    public int getDeMortgagedCost() {return (int) (getMortgage() + (getMortgage() * 0.1));}
+    /**
+     * @return Gets the cost to un-mortgage the property.
+     */
+    public int getUnMortgagedCost() {return (int) (getMortgage() + (getMortgage() * 0.1));}
+
+    @Override
+    public String toString() {
+        // create a string based on property data
+        return (getPosition().getSimplePosition() + "," + ((getOwner() != null) ? getOwner().getName() : "null")
+                + "," + getHotels() + "," + getHouses() + "," + isMortgaged());
+    }
 
     // getters & setters
 
@@ -241,23 +269,54 @@ public class Property { // NOTE: a property is just a location on the road (game
     public String getName() {return name;}
 
     /**
-     * @return The list of positions the property contains.
+     * @return The position of the property.
      */
-    public ArrayList<Position> getPositions() {return positions;}
+    public Position getPosition() {return position;}
 
+    /**
+     * @return Amount of houses the property has.
+     */
     public int getHouses() {return houses;}
 
+    /**
+     * @param houses The amount of houses to set.
+     */
     public void setHouses(int houses) {this.houses = houses;}
 
+    /**
+     * @return Amount of hotels the property has.
+     */
     public int getHotels() {return hotels;}
 
+    /**
+     * @param hotels The amount of hotels to set.
+     */
     public void setHotels(int hotels) {this.hotels = hotels;}
 
+    /**
+     * @return The mortgage value.
+     */
     public int getMortgage() {return mortgage;}
 
+    /**
+     * @return If the property is mortgaged.
+     */
     public boolean isMortgaged() {return mortgaged;}
 
+    /**
+     * @param mortgaged Whether to mortgage.
+     */
     public void setMortgaged(boolean mortgaged) {this.mortgaged = mortgaged;}
+
+    /**
+     * @return The property card.
+     */
+    public PropertyCard getPropertyCard() {return propertyCard;}
+
+    /**
+     * @param propertyCard The new property card.
+     */
+    public void setPropertyCard(PropertyCard propertyCard) {this.propertyCard = propertyCard;}
 
     public enum Group {
 

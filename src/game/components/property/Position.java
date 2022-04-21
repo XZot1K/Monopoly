@@ -7,12 +7,12 @@ package game.components.property;
 
 public class Position {
 
-    private final int position, // integer between 0 & 39 for a linear simple coordinate
+    private final int simplePosition, // integer between 0 & 39 for a linear simple coordinate
             x, y; // x & y coords for the layout
 
-    public Position(int position, int x, int y) {
+    public Position(int simplePosition, int x, int y) {
         // initialize
-        this.position = position;
+        this.simplePosition = simplePosition;
         this.x = x;
         this.y = y;
     }
@@ -20,7 +20,7 @@ public class Position {
     /**
      * @return Integer between 0 & 39 for a linear simple coordinate
      */
-    public int getPosition() {return position;}
+    public int getSimplePosition() {return simplePosition;}
 
     /**
      * @return The 'x' coordinate for the layout.
