@@ -15,6 +15,7 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
+import java.util.stream.Collectors;
 
 public class Token {
 
@@ -302,6 +303,15 @@ public class Token {
         if (this.money <= 0) {
             Game.INSTANCE.nextTurn(); // next turn
             Game.INSTANCE.getPlayers().remove(this); // unregister the player
+
+            // collect all owned properties and reset their operations
+            Game.INSTANCE.getProperties().stream().filter(prop -> (prop.isOwned() && prop.getOwner().getName().equals(getName())))
+                    .collect(Collectors.toList()).forEach(property -> {
+                        property.setHouses(0);
+                        property.setHotels(0);
+                        property.setMortgaged(false);
+                        property.setOwner(null);
+                    });
 
             // log action
             Game.INSTANCE.getBoard().getCenter().getLogBox().append("\n\"" + getName() + "\" has gone bankrupt.");
