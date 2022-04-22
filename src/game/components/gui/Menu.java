@@ -1,3 +1,8 @@
+/*
+    Jeremiah Osborne & Dominick Delgado
+    Date: 4/1/2022
+ */
+
 package game.components.gui;
 
 import game.Game;

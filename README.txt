@@ -1,5 +1,5 @@
 /*
-    Jeremiah Osborne
+    Jeremiah Osborne & Dominick Delgado
     Date: 4/1/2022
  */
 
@@ -12,3 +12,9 @@
 ## Game Rules:
 
     https://www.ultraboardgames.com/monopoly/game-rules.php
+
+    https://monopoly.fandom.com/wiki/Category:Monopoly
+
+## Chance & Community Chest Cards
+
+    https://www.monopolyland.com/list-monopoly-chance-community-chest-cards/
