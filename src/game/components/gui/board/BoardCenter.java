@@ -328,8 +328,10 @@ public class BoardCenter extends JPanel {
                         if (!property.isMortgaged()) { // is mortgaged
 
                             // draw rent and sell price
-                            g2.drawString("Rent: " + property.getRent(), (int) (getWidth() * 0.34), (int) (getHeight() * 0.15));
-                            g2.drawString("Sell: " + property.getRent(), (int) (getWidth() * 0.34), (int) (getHeight() * 0.17));
+                            g2.drawString("Rent: " + ((property.getRent() <= 0) ? "---" : property.getRent()),
+                                    (int) (getWidth() * 0.34), (int) (getHeight() * 0.15));
+                            g2.drawString("Sell: " + ((property.getSellValue() <= 0) ? "---" : property.getSellValue()),
+                                    (int) (getWidth() * 0.34), (int) (getHeight() * 0.17));
 
                         } else
                             g2.drawString("Mortgaged", (int) (getWidth() * 0.34), (int) (getHeight() * 0.15)); // draw if its mortgaged

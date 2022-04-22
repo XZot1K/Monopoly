@@ -124,7 +124,7 @@ public class Property { // NOTE: a property is just a location on the road (game
      */
     public int getSellValue() {
         return ((getHotelRent() > 0) ? ((getPerHouseCost() * 5) / 2) // return half of hotel purchase price
-                : ((getHouses() > 0) ? ((getPerHouseCost() * getHouses()) / 2) : 0)); // return half of houses purchase price
+                : ((getHouses() > 0) ? ((getPerHouseCost() * getHouses()) / 2) : getBaseValue())); // return half of houses purchase price
     }
 
     /**
