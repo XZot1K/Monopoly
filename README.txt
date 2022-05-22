@@ -3,6 +3,9 @@
     Date: 4/1/2022
  */
 
+## Presentation (Previews, Images, etc.)
+https://docs.google.com/presentation/d/1rCk6Rj2Kou5JRPqgDl2Kjh5NdM5M1VtS-FpgpkN9Yu4/edit?usp=sharing
+
 ## Description:
 
     * The game is designed to be very user-friendly and flow controlled. As the player clicks a button or performs an operation it is
