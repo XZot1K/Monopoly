@@ -6,7 +6,7 @@ https://docs.google.com/presentation/d/1rCk6Rj2Kou5JRPqgDl2Kjh5NdM5M1VtS-FpgpkN9
 
 ## Description:
 
-    * The game is designed to be very user-friendly and flow controlled. As the player clicks a button or performs an operation it is
+    * This Monopoly game is designed to be user-friendly and flow controlled. As the player clicks a button or performs an operation it is
       pretty clear of what can and cannot be done in that particular moment.
 
 ## Tweaked Rules:
